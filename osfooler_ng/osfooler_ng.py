@@ -1,10 +1,12 @@
 #!/usr/bin/python2
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
+from __future__ import absolute_import
 from random import randint
 import hashlib
 import logging
-import module_p0f
+from . import module_p0f
 import socket
 import fcntl
 import struct
@@ -461,7 +463,7 @@ def get_base():
         if not l or l[0] == "#":
             continue
         if l[:12] == "Fingerprint ":
-            print " [+] Fingerprint selected: %s" % l[12:]
+            print(" [+] Fingerprint selected: %s" % l[12:])
             name = l[12:].strip()
             sig = {}
             p = base
@@ -493,7 +495,7 @@ def get_names(search):
             if (l[12:] == search):
                 var = 1
         if (var == 1):
-            print "      %s" % l
+            print("      %s" % l)
             if l[:6] == "Class":
                 continue
             elif l[:4] == "CPE ":
@@ -514,7 +516,7 @@ def list_os():
     for l in f:
         l = l.strip()
         if l[:12] == "Fingerprint ":
-            print "    + \"%s\"" % l[12:]
+            print("    + \"%s\"" % l[12:])
 
 def get_random_os():
   random = []
@@ -539,9 +541,9 @@ def search_os(search_string):
     # Remove possible duplicates
     nmap_values = list(dict.fromkeys(nmap_values))
     # Print results
-    print " [+] Searching databases for: '%s'" % search_string
+    print(" [+] Searching databases for: '%s'" % search_string)
     for x in range(len(nmap_values)):
-      print "      [nmap] \"%s\"" % nmap_values[x]
+      print("      [nmap] \"%s\"" % nmap_values[x])
     #
     # Search p0f database
     db = module_p0f.p0f_kdb.get_base()
@@ -551,7 +553,7 @@ def search_os(search_string):
         p0f_values.append("OS: \"" + db[i][6] + "\" DETAILS: \"" + db[i][7] + "\"")
     # Print results
     for x in range(len(p0f_values)):
-      print "      [p0f] %s" % p0f_values[x]
+      print("      [p0f] %s" % p0f_values[x])
     exit(0)
 
 def options_to_scapy(x):
@@ -597,31 +599,31 @@ def print_tcp_packet(pl, destination):
     option_list = tcp.parse_opts(pkt.tcp.opts)
     
     if opts.verbose:
-        print " [+] Modifying '%s' packet in real time (total length %s)" % (destination, pl.get_payload_len())
-        print "      [+] IP:  source %s destination %s tos %s id %s" % (inet_ntoa(pkt.src), inet_ntoa(pkt.dst), pkt.tos, pkt.id)
-        print "      [+] TCP: sport %s dport %s flags S seq %s ack %s win %s" % (pkt.tcp.sport, pkt.tcp.dport, pkt.tcp.seq, pkt.tcp.ack, pkt.tcp.win)
-        print "               options %s" % (opts_human(option_list))
+        print(" [+] Modifying '%s' packet in real time (total length %s)" % (destination, pl.get_payload_len()))
+        print("      [+] IP:  source %s destination %s tos %s id %s" % (inet_ntoa(pkt.src), inet_ntoa(pkt.dst), pkt.tos, pkt.id))
+        print("      [+] TCP: sport %s dport %s flags S seq %s ack %s win %s" % (pkt.tcp.sport, pkt.tcp.dport, pkt.tcp.seq, pkt.tcp.ack, pkt.tcp.win))
+        print("               options %s" % (opts_human(option_list)))
 
 def print_icmp_packet(pl): 
     pkt = ip.IP(pl.get_payload())
     if opts.verbose:
-        print " [+] Modifying packet in real time (total length %s)" % pl.get_payload_len()
-        print "      [+] IP:   source %s destination %s tos %s id %s" % (inet_ntoa(pkt.src), inet_ntoa(pkt.dst), pkt.tos, pkt.id)
-        print "      [+] ICMP: code %s type %s len %s id %s seq %s" % (pkt.icmp.code, pkt.icmp.type, len(pkt.icmp.data.data), pkt.icmp.data.id, pkt.icmp.data.seq)
+        print(" [+] Modifying packet in real time (total length %s)" % pl.get_payload_len())
+        print("      [+] IP:   source %s destination %s tos %s id %s" % (inet_ntoa(pkt.src), inet_ntoa(pkt.dst), pkt.tos, pkt.id))
+        print("      [+] ICMP: code %s type %s len %s id %s seq %s" % (pkt.icmp.code, pkt.icmp.type, len(pkt.icmp.data.data), pkt.icmp.data.id, pkt.icmp.data.seq))
 
 def print_udp_packet(pl): 
     pkt = ip.IP(pl.get_payload())
 
     if opts.verbose:
-        print " [+] Modifying packet in real time (total length %s)" % pl.get_payload_len()
-        print "      [+] IP:   source %s destination %s tos %s id %s" % (inet_ntoa(pkt.src), inet_ntoa(pkt.dst), pkt.tos, pkt.id)
-        print "      [+] UDP:  sport %s dport %s len %s" % (pkt.udp.sport, pkt.udp.dport, len(pkt.udp.data))
-        print "                data %s" % (pkt.udp.data[0:49])
-        print "                     %s" % (pkt.udp.data[50:99])
-        print "                     %s" % (pkt.udp.data[100:149])
-        print "                     %s" % (pkt.udp.data[150:199])
-        print "                     %s" % (pkt.udp.data[200:249])
-        print "                     %s" % (pkt.udp.data[250:299])
+        print(" [+] Modifying packet in real time (total length %s)" % pl.get_payload_len())
+        print("      [+] IP:   source %s destination %s tos %s id %s" % (inet_ntoa(pkt.src), inet_ntoa(pkt.dst), pkt.tos, pkt.id))
+        print("      [+] UDP:  sport %s dport %s len %s" % (pkt.udp.sport, pkt.udp.dport, len(pkt.udp.data)))
+        print("                data %s" % (pkt.udp.data[0:49]))
+        print("                     %s" % (pkt.udp.data[50:99]))
+        print("                     %s" % (pkt.udp.data[100:149]))
+        print("                     %s" % (pkt.udp.data[150:199]))
+        print("                     %s" % (pkt.udp.data[200:249]))
+        print("                     %s" % (pkt.udp.data[250:299]))
 
 # Process p0f packets
 def cb_p0f( pl ): 
@@ -649,9 +651,9 @@ def cb_p0f( pl ):
                     print_tcp_packet(pl, "p0f")
                 pl.set_payload(str(pkt_send))
                 pl.accept()  
-            except Exception, e:
-                print " [+] Unable to modify packet with p0f personality..."
-                print " [+] Aborting"
+            except Exception as e:
+                print(" [+] Unable to modify packet with p0f personality...")
+                print(" [+] Aborting")
                 sys.exit()
         elif opts.osgenre and not opts.details_p0f:
             try:
@@ -661,16 +663,16 @@ def cb_p0f( pl ):
                   print_tcp_packet(pl, "p0f") 
                 pl.set_payload(str(pkt_send))
                 pl.accept() 
-            except Exception, e:
-                print " [+] Unable to modify packet with p0f personality..."
-                print " [+] Aborting"
+            except Exception as e:
+                print(" [+] Unable to modify packet with p0f personality...")
+                print(" [+] Aborting")
                 sys.exit()
         else:
             pl.accept()
     else:
         pl.accept()
         if opts.verbose:
-            print " [+] Ignored packet:   source %s destination %s tos %s id %s" % (inet_ntoa(pkt.src), inet_ntoa(pkt.dst), pkt.tos, pkt.id)
+            print(" [+] Ignored packet:   source %s destination %s tos %s id %s" % (inet_ntoa(pkt.src), inet_ntoa(pkt.dst), pkt.tos, pkt.id))
       #  return 0
 
 # Process nmap packets
@@ -793,13 +795,13 @@ def init(queue):
   q = nfqueue.NetfilterQueue()
   if (queue % 2 ==  0):
     q.bind(queue, cb_nmap)
-    print "      [->] %s: nmap packet processor" % multiprocessing.current_process().name
+    print("      [->] %s: nmap packet processor" % multiprocessing.current_process().name)
   if (queue % 2 ==  1 and (opts.osgenre or (opts.details_p0f and opts.osgenre))):
     q.bind(queue, cb_p0f)
-    print "      [->] %s: p0f packet processor" % multiprocessing.current_process().name
+    print("      [->] %s: p0f packet processor" % multiprocessing.current_process().name)
   try: 
     q.run()
-  except KeyboardInterrupt,err:
+  except KeyboardInterrupt as err:
     pass
 
 # Upload database
@@ -817,9 +819,9 @@ def update_nmap_db():
 		f = open(get_nmap_os_db_path(), "w")
 		f.write(data)
 		f.close()
-		print "updated!"
+		print("updated!")
   else:
-	  print "latest!"
+	  print("latest!")
 
 def md5(fname):
   hash_md5 = hashlib.md5()
@@ -894,19 +896,19 @@ def main():
     print("Please, select p0f OS Genre and Details")
     db = module_p0f.p0f_kdb.get_base()
     for i in range(0, len(db)):
-      print "\tOS Genre=\"%s\" Details=\"%s\"" % (db[i][6], db[i][7])
+      print("\tOS Genre=\"%s\" Details=\"%s\"" % (db[i][6], db[i][7]))
     exit(0)
 
   if not opts.os and (not (opts.details_p0f and not opts.osgenre)) and (not opts.osgenre):
-    print " [ERROR] Please, choose a nmap or p0f OS system to emulate"
-    print " [+] Use %s -h to get more information" % sys.argv[0]
-    print
+    print(" [ERROR] Please, choose a nmap or p0f OS system to emulate")
+    print(" [+] Use %s -h to get more information" % sys.argv[0])
+    print()
     sys.exit(' [+] Aborting...')
 
   if (opts.details_p0f and not opts.osgenre):
-    print " [ERROR] Please, choose p0f OS system to emulate, not only OS details"
-    print " [+] Use %s -p to list possible candidates" % sys.argv[0]
-    print
+    print(" [ERROR] Please, choose p0f OS system to emulate, not only OS details")
+    print(" [+] Use %s -p to list possible candidates" % sys.argv[0])
+    print()
     sys.exit(' [+] Aborting...')
 
   # Check if user is root before continue
@@ -917,7 +919,7 @@ def main():
     try:
       q_num0 = os.listdir("/sys/class/net/").index(opts.interface) * 2
       q_num1 = os.listdir("/sys/class/net/").index(opts.interface) * 2 + 1
-    except ValueError, err:
+    except ValueError as err:
       q_num0 = -1
       q_num1 = -1
   else:
@@ -925,7 +927,7 @@ def main():
     try:
       q_num0 = os.listdir("/sys/class/net/").index(interface) * 2
       q_num1 = os.listdir("/sys/class/net/").index(interface) * 2 + 1
-    except ValueError, err:
+    except ValueError as err:
       q_num0 = -1
       q_num1 = -1
 
@@ -933,18 +935,18 @@ def main():
   global base
 
   if opts.os:
-    print " [+] Mutating to nmap:"
+    print(" [+] Mutating to nmap:")
     base = {}
     if (opts.os == "random"):
       base = get_names(get_random_os())
     else:
       base = get_names(opts.os)
     if (not base):
-      print "      [->] \"%s\" could not be found in nmap database..." % opts.os
+      print("      [->] \"%s\" could not be found in nmap database..." % opts.os)
       sys.exit(' [+] Aborting...')
 
   if (opts.osgenre):
-    print " [+] Mutating to p0f:"
+    print(" [+] Mutating to p0f:")
     db = module_p0f.p0f_kdb.get_base()
     exists = 0
     db_size = len(db)
@@ -954,23 +956,23 @@ def main():
     if (not opts.details_p0f):
       for i in range(0, db_size):
         if (db[i][6] == opts.osgenre):
-          print "      WWW:%s|TTL:%s|D:%s|SS:%s|OOO:%s|QQ:%s|OS:%s|DETAILS:%s" % (db[i][0],db[i][1],db[i][2],db[i][3],db[i][4],db[i][5],db[i][6],db[i][7])
+          print("      WWW:%s|TTL:%s|D:%s|SS:%s|OOO:%s|QQ:%s|OS:%s|DETAILS:%s" % (db[i][0],db[i][1],db[i][2],db[i][3],db[i][4],db[i][5],db[i][6],db[i][7]))
           exists = 1
     if (opts.details_p0f):
       for i in range(0, db_size):
         if (db[i][6] == opts.osgenre and db[i][7] == opts.details_p0f):
-          print "      WWW:%s|TTL:%s|D:%s|SS:%s|OOO:%s|QQ:%s|OS:%s|DETAILS:%s" % (db[i][0],db[i][1],db[i][2],db[i][3],db[i][4],db[i][5],db[i][6],db[i][7])
+          print("      WWW:%s|TTL:%s|D:%s|SS:%s|OOO:%s|QQ:%s|OS:%s|DETAILS:%s" % (db[i][0],db[i][1],db[i][2],db[i][3],db[i][4],db[i][5],db[i][6],db[i][7]))
           exists = 1
           break
     if (not exists):
-      print "      [->] Could not found that combination in p0f database..."
+      print("      [->] Could not found that combination in p0f database...")
       sys.exit(' [+] Aborting...')
 
   if (not opts.details_p0f and opts.osgenre):
-      print " [i] You've only selected p0f OS genre. Details will be chosen randomly every packet from the list bellow"
+      print(" [i] You've only selected p0f OS genre. Details will be chosen randomly every packet from the list bellow")
   
   # Start activity
-  print " [+] Activating queues"
+  print(" [+] Activating queues")
   procs = []
   # nmap mode
   if opts.os:
@@ -994,23 +996,23 @@ def main():
   try:
       for proc in procs:
         proc.join()
-      print
+      print()
       # Flush all iptabels rules
       if (q_num0 >= 0):
         os.system("iptables -D INPUT -t mangle -j NFQUEUE --queue-num %s" % q_num0) 
       if (q_num1 >= 1):
         os.system("iptables -D OUTPUT -t mangle -p TCP --syn -j NFQUEUE --queue-num %s" % q_num1) 
-      print " [+] Active queues removed"
-      print " [+] Exiting OSfooler..." 
+      print(" [+] Active queues removed")
+      print(" [+] Exiting OSfooler...") 
   except KeyboardInterrupt:
-      print
+      print()
       # Flush all iptabels rules
       if (q_num0 >= 0):
         os.system("iptables -D INPUT -t mangle -j NFQUEUE --queue-num %s" % q_num0) 
       if (q_num1 >= 1):
         os.system("iptables -D OUTPUT -t mangle -p TCP --syn -j NFQUEUE --queue-num %s" % q_num1) 
-      print " [+] Active queues removed"
-      print " [+] Exiting OSfooler..."
+      print(" [+] Active queues removed")
+      print(" [+] Exiting OSfooler...")
       #for p in multiprocessing.active_children():
       #  p.terminate()
 
