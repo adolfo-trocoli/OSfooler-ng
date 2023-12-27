@@ -3,6 +3,12 @@
 
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
+from past.utils import old_div
 from random import randint
 import hashlib
 import logging
@@ -15,13 +21,13 @@ import sys
 import time
 import os
 import netfilterqueue as nfqueue
-import ConfigParser
+import configparser
 import ast
 l = logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import *
 from dpkt import *
 from socket import AF_INET, AF_INET6, inet_ntoa
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import multiprocessing
 from multiprocessing import Process
 
@@ -114,7 +120,7 @@ def parse_nmap_field(field):
     # Choose randomly one value :)
     list = field.split("|")
     # Filter any empty string
-    list = filter (None,list)
+    list = [_f for _f in list if _f]
     result = random.choice(list)
   else:
     result = field
@@ -263,8 +269,7 @@ def send_icmp_response(pl, probe):
         icmp_ipid = icmp_ipid + randint(50, 100)
     if (icmp_ipid > 65535):
         icmp_ipid = icmp_ipid - 65535
-    send(IP(id=icmp_ipid, dst=inet_ntoa(pkt.src), src=inet_ntoa(pkt.dst), flags=frag_bit, ttl=TG)
-       / ICMP(id=pkt.icmp.data.id, seq=pkt.icmp.data.seq, code=code, type=0), verbose=0)
+    send(old_div(IP(id=icmp_ipid, dst=inet_ntoa(pkt.src), src=inet_ntoa(pkt.dst), flags=frag_bit, ttl=TG), ICMP(id=pkt.icmp.data.id, seq=pkt.icmp.data.seq, code=code, type=0)), verbose=0)
 
 # Send UDP response
 def send_udp_response(pl, probe): 
@@ -276,8 +281,8 @@ def send_udp_response(pl, probe):
   TG = int(base[probe][2][1], 16)
   IPL = int(base[probe][3][1], 16)
   FIELD = int(base[probe][4][1])
-  send(IP(dst=inet_ntoa(pkt.src), src=inet_ntoa(pkt.dst), ttl=TG, flags=frag_bit) / ICMP(code=3, type=3) /
-    IP(dst=inet_ntoa(pkt.dst), src=inet_ntoa(pkt.src), id=pkt.id, ttl=TG - 1) / UDP(dport=pkt.udp.dport, sport=pkt.udp.sport), verbose=0)
+  send(old_div(old_div(old_div(IP(dst=inet_ntoa(pkt.src), src=inet_ntoa(pkt.dst), ttl=TG, flags=frag_bit), ICMP(code=3, type=3)),
+    IP(dst=inet_ntoa(pkt.dst), src=inet_ntoa(pkt.src), id=pkt.id, ttl=TG - 1)), UDP(dport=pkt.udp.dport, sport=pkt.udp.sport)), verbose=0)
 
 # Send probe response
 def send_probe_response(pl, probe):
@@ -332,8 +337,8 @@ def send_probe_response(pl, probe):
     IPID = IPID + randint(50, 100)
   if (IPID > 65535):
     IPID = IPID - 65535
-  send(IP(id=IPID, dst=inet_ntoa(pkt.src), src=inet_ntoa(pkt.dst), flags=frag_bit, ttl=TG) /
-     TCP(sport=pkt.tcp.dport, dport=pkt.tcp.sport, seq=SEQ, ack=ACK, window=W, options=opts, flags=FLAGS), verbose=0)
+  send(old_div(IP(id=IPID, dst=inet_ntoa(pkt.src), src=inet_ntoa(pkt.dst), flags=frag_bit, ttl=TG),
+     TCP(sport=pkt.tcp.dport, dport=pkt.tcp.sport, seq=SEQ, ack=ACK, window=W, options=opts, flags=FLAGS)), verbose=0)
 
 # ECN
 # Send probe response
@@ -395,8 +400,8 @@ def send_ECN_response(pl, probe):
       IPID = IPID + randint(50, 100)
     if (IPID > 65535):
       IPID = IPID - 65535
-    send(IP(id=IPID, dst=inet_ntoa(pkt.src), src=inet_ntoa(pkt.dst), flags=frag_bit, ttl=TG) /
-      TCP(sport=pkt.tcp.dport, dport=pkt.tcp.sport, window=W, options=opts, flags=FLAGS), verbose=0)
+    send(old_div(IP(id=IPID, dst=inet_ntoa(pkt.src), src=inet_ntoa(pkt.dst), flags=frag_bit, ttl=TG),
+      TCP(sport=pkt.tcp.dport, dport=pkt.tcp.sport, window=W, options=opts, flags=FLAGS)), verbose=0)
 
 def send_probe_response_T1(pl, probe, packet):
     global IPID 
@@ -446,8 +451,8 @@ def send_probe_response_T1(pl, probe, packet):
       W = int(W, 16)
     else :
       W = None
-    send(IP(dst=inet_ntoa(pkt.src), src=inet_ntoa(pkt.dst), flags=frag_bit, ttl=TG) /
-         TCP(sport=pkt.tcp.dport, dport=pkt.tcp.sport, seq=SEQ, ack=ACK, flags=FLAGS, window=W, options=opts,), verbose=0)
+    send(old_div(IP(dst=inet_ntoa(pkt.src), src=inet_ntoa(pkt.dst), flags=frag_bit, ttl=TG),
+         TCP(sport=pkt.tcp.dport, dport=pkt.tcp.sport, seq=SEQ, ack=ACK, flags=FLAGS, window=W, options=opts,)), verbose=0)
 
 def get_nmap_os_db_path():
   return os.path.abspath(os.path.dirname(__file__)) + "/dep/nmap-os-db"
@@ -480,7 +485,7 @@ def get_base():
                 continue
             cursor = l[:op]
             dic[cursor] = (
-                list(map(lambda x: x.split("="), l[op + 1:cl].split("%"))))
+                list([x.split("=") for x in l[op + 1:cl].split("%")]))
     return dic
 
 def get_names(search):
@@ -508,7 +513,7 @@ def get_names(search):
                     continue
                 cursor = l[:op]
                 dic[cursor] = (
-                    list(map(lambda x: x.split("="), l[op + 1:cl].split("%"))))
+                    list([x.split("=") for x in l[op + 1:cl].split("%")]))
     return dic
 
 def list_os():
@@ -645,8 +650,8 @@ def cb_p0f( pl ):
             i = int(timestamp, 16)
         if opts.osgenre and opts.details_p0f:
             try:
-                pkt_send = module_p0f.p0f_impersonate(IP(dst=inet_ntoa(pkt.dst), src=inet_ntoa(pkt.src), id=pkt.id, tos=pkt.tos) / TCP(
-                    sport=pkt.tcp.sport, dport=pkt.tcp.dport, flags='S', seq=pkt.tcp.seq, ack=0), i, osgenre=opts.osgenre, osdetails=opts.details_p0f)
+                pkt_send = module_p0f.p0f_impersonate(old_div(IP(dst=inet_ntoa(pkt.dst), src=inet_ntoa(pkt.src), id=pkt.id, tos=pkt.tos), TCP(
+                    sport=pkt.tcp.sport, dport=pkt.tcp.dport, flags='S', seq=pkt.tcp.seq, ack=0)), i, osgenre=opts.osgenre, osdetails=opts.details_p0f)
                 if opts.verbose:
                     print_tcp_packet(pl, "p0f")
                 pl.set_payload(str(pkt_send))
@@ -657,8 +662,8 @@ def cb_p0f( pl ):
                 sys.exit()
         elif opts.osgenre and not opts.details_p0f:
             try:
-                pkt_send = module_p0f.p0f_impersonate(IP(dst=inet_ntoa(pkt.dst), src=inet_ntoa(pkt.src)) / TCP(
-                    sport=pkt.tcp.sport, dport=pkt.tcp.dport, flags='S', seq=pkt.tcp.seq), i, osgenre=opts.osgenre)
+                pkt_send = module_p0f.p0f_impersonate(old_div(IP(dst=inet_ntoa(pkt.dst), src=inet_ntoa(pkt.src)), TCP(
+                    sport=pkt.tcp.sport, dport=pkt.tcp.dport, flags='S', seq=pkt.tcp.seq)), i, osgenre=opts.osgenre)
                 if opts.verbose:
                   print_tcp_packet(pl, "p0f") 
                 pl.set_payload(str(pkt_send))
@@ -809,7 +814,7 @@ def update_nmap_db():
   sys.stdout.write(' [+] Checking nmap database... ')
   sys.stdout.flush()
   url = 'https://svn.nmap.org/nmap/nmap-os-db'
-  response = urllib.urlopen(url)
+  response = urllib.request.urlopen(url)
   data = response.read()
   m = hashlib.md5()
   m.update(data)

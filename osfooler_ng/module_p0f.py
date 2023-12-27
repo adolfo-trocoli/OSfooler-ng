@@ -11,7 +11,12 @@
 Clone of p0f passive OS fingerprinting
 """
 from __future__ import print_function
+from __future__ import division
 
+from builtins import str
+from builtins import map
+from builtins import range
+from past.utils import old_div
 import os
 from scapy.data import KnowledgeBase
 from scapy.config import conf
@@ -65,7 +70,7 @@ class p0fKnowledgeBase(KnowledgeBase):
                     if x.isdigit():
                         return int(x)
                     return x
-                li = map(a2i, l[1:4])
+                li = list(map(a2i, l[1:4]))
                 #if li[0] not in self.ttl_range:
                 #    self.ttl_range.append(li[0])
                 #    self.ttl_range.sort()
@@ -119,7 +124,7 @@ def packet2p0f(pkt):
     #ttl=t[t.index(pkt.ttl)+1]
     ttl = pkt.ttl
     
-    df = (pkt.flags & 2) / 2
+    df = old_div((pkt.flags & 2), 2)
     ss = len(pkt)
     # from p0f/config.h : PACKET_BIG = 100
     if ss > 100:
@@ -180,9 +185,9 @@ def packet2p0f(pkt):
     win = pkt.payload.window
     if mss != -1:
         if mss != 0 and win % mss == 0:
-            win = "S" + str(win/mss)
+            win = "S" + str(old_div(win,mss))
         elif win % (mss + 40) == 0:
-            win = "T" + str(win/(mss+40))
+            win = "T" + str(old_div(win,(mss+40)))
     win = str(win)
     
     qq = ""
@@ -307,7 +312,7 @@ def prnp0f(pkt):
         uptime = None
     res = pkt.sprintf("%IP.src%:%TCP.sport% - " + r[0] + " " + r[1])
     if uptime is not None:
-        res += pkt.sprintf(" (up: " + str(uptime/3600) + " hrs)\n  -> %IP.dst%:%TCP.dport% (%TCP.flags%)")
+        res += pkt.sprintf(" (up: " + str(old_div(uptime,3600)) + " hrs)\n  -> %IP.dst%:%TCP.dport% (%TCP.flags%)")
     else:
         res += pkt.sprintf("\n  -> %IP.dst%:%TCP.dport% (%TCP.flags%)")
     if r[2] is not None:
@@ -328,7 +333,7 @@ pkt2uptime(pkt, [HZ=100])"""
         if opt[0] == "Timestamp":
             #t = pkt.time - opt[1][0] * 1.0/HZ
             #return time.ctime(t)
-            t = opt[1][0] / HZ
+            t = old_div(opt[1][0], HZ)
             return t
     raise TypeError("No timestamp option")
 
@@ -362,9 +367,9 @@ Some specifications of the p0f.fp file are not (yet) implemented."""
         pb = db.get_base()
         if pb is None:
             pb = []
-        pb = filter(lambda x: x[6] == osgenre, pb)
+        pb = [x for x in pb if x[6] == osgenre]
         if osdetails:
-            pb = filter(lambda x: x[7] == osdetails, pb)
+            pb = [x for x in pb if x[7] == osdetails]
     elif signature:
         pb = [signature]
     else:
@@ -372,9 +377,9 @@ Some specifications of the p0f.fp file are not (yet) implemented."""
     if db == p0fr_kdb:
         # 'K' quirk <=> RST+ACK
         if pkt.payload.flags & 0x4 == 0x4:
-            pb = filter(lambda x: 'K' in x[5], pb)
+            pb = [x for x in pb if 'K' in x[5]]
         else:
-            pb = filter(lambda x: 'K' not in x[5], pb)
+            pb = [x for x in pb if 'K' not in x[5]]
     if not pb:
         raise Scapy_Exception("No match in the p0f database")
     pers = pb[random.randint(0, len(pb) - 1)]
@@ -388,7 +393,7 @@ Some specifications of the p0f.fp file are not (yet) implemented."""
                 # MSS might have a maximum size because of window size
                 # specification
                 if pers[0][0] == 'S':
-                    maxmss = (2**16-1) / int(pers[0][1:])
+                    maxmss = old_div((2**16-1), int(pers[0][1:]))
                 else:
                     maxmss = (2**16-1)
                 # If we have to randomly pick up a value, we cannot use
@@ -399,7 +404,7 @@ Some specifications of the p0f.fp file are not (yet) implemented."""
                     options.append(('MSS', random.randint(1,maxmss)))
                 elif opt[1] == '%':
                     coef = int(opt[2:])
-                    options.append(('MSS', coef*random.randint(1,maxmss/coef)))
+                    options.append(('MSS', coef*random.randint(1,old_div(maxmss,coef))))
                 else:
                     options.append(('MSS', int(opt[1:])))
             elif opt[0] == 'W':
@@ -408,7 +413,7 @@ Some specifications of the p0f.fp file are not (yet) implemented."""
                 elif opt[1] == '%':
                     coef = int(opt[2:])
                     options.append(('WScale', coef*RandNum(min=1,
-                                                           max=(2**8-1)/coef)))
+                                                           max=old_div((2**8-1),coef))))
                 else:
                     options.append(('WScale', int(opt[1:])))
             elif opt == 'T0':
@@ -451,15 +456,15 @@ Some specifications of the p0f.fp file are not (yet) implemented."""
         pkt.payload.window = int(pers[0])
     elif pers[0][0] == '%':
         coef = int(pers[0][1:])
-        pkt.payload.window = coef * RandNum(min=1,max=(2**16-1)/coef)
+        pkt.payload.window = coef * RandNum(min=1,max=old_div((2**16-1),coef))
     elif pers[0][0] == 'T':
         pkt.payload.window = mtu * int(pers[0][1:])
     elif pers[0][0] == 'S':
         ## needs MSS set
-        MSS = filter(lambda x: x[0] == 'MSS', options)
-        if not filter(lambda x: x[0] == 'MSS', options):
+        MSS = [x for x in options if x[0] == 'MSS']
+        if not [x for x in options if x[0] == 'MSS']:
             raise Scapy_Exception("TCP window value requires MSS, and MSS option not set")
-        pkt.payload.window = filter(lambda x: x[0] == 'MSS', options)[0][1] * int(pers[0][1:])
+        pkt.payload.window = [x for x in options if x[0] == 'MSS'][0][1] * int(pers[0][1:])
     else:
         raise Scapy_Exception('Unhandled window size specification')
     
@@ -527,7 +532,7 @@ interface and may (are likely to) be different than those generated on
         # XXX are the packets also seen twice on non Linux systems ?
         count=14
         pl = sniff(iface=iface, filter='tcp and port ' + str(port), count = count, timeout=3)
-        map(addresult, map(packet2p0f, pl))
+        list(map(addresult, list(map(packet2p0f, pl))))
         os.waitpid(pid,0)
     elif pid < 0:
         log_runtime.error("fork error")
