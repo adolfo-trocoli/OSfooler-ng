@@ -628,7 +628,13 @@ def cb_p0f( pl ):
 
     pkt = ip.IP(pl.get_payload())
     
-    if (inet_ntoa(pkt.src) == home_ip) and (pkt.p == ip.IP_PROTO_TCP) and (tcp_flags(pkt.tcp.flags) == "S"):
+    # that condition is too complex, I had to drop SourceIP check, so it will work with PolicyBasedRouting.
+    #
+    # During PolicyBasedRouting, when we afterwards route the packets via
+    # .. another interface, its SRC_IP remains always of main interface, as TCP stack sees it.
+
+    #if (inet_ntoa(pkt.src) == home_ip) and (pkt.p == ip.IP_PROTO_TCP) and (tcp_flags(pkt.tcp.flags) == "S"):
+    if (pkt.p == ip.IP_PROTO_TCP) and (tcp_flags(pkt.tcp.flags) == "S"): 
         options = pkt.tcp.opts.encode('hex_codec')
         op = options.find("080a")
         if (op != -1):
@@ -662,7 +668,9 @@ def cb_p0f( pl ):
         else:
             pl.accept()
     else:
-		    pl.accept()
+        pl.accept()
+        if opts.verbose:
+            print " [+] Ignored packet:   source %s destination %s tos %s id %s" % (inet_ntoa(pkt.src), inet_ntoa(pkt.dst), pkt.tos, pkt.id)
       #  return 0
 
 # Process nmap packets
@@ -826,6 +834,18 @@ def user_is_root():
   else:
       return
 
+def get_default_iface_name_linux():
+    route = "/proc/net/route"
+    with open(route) as f:
+        for line in f.readlines():
+            try:
+                iface, dest, _, flags, _, _, _, _, _, _, _, =  line.strip().split()
+                if dest != '00000000' or not int(flags, 16) & 2:
+                    continue
+                return iface
+            except:
+                continue
+
 def main():
   # Main program begins here
   show_banner()
@@ -901,10 +921,10 @@ def main():
       q_num0 = -1
       q_num1 = -1
   else:
-    interface = "eth0" # you may paste here your main interface found by '$~: ip a', for instance  
+    interface = get_default_iface_name_linux()
     try:
-      q_num0 = os.listdir("/sys/class/net/").index(opts.interface) * 2
-      q_num1 = os.listdir("/sys/class/net/").index(opts.interface) * 2 + 1
+      q_num0 = os.listdir("/sys/class/net/").index(interface) * 2
+      q_num1 = os.listdir("/sys/class/net/").index(interface) * 2 + 1
     except ValueError, err:
       q_num0 = -1
       q_num1 = -1
@@ -953,7 +973,8 @@ def main():
   print " [+] Activating queues"
   procs = []
   # nmap mode
-  if opts.os:  
+  if opts.os:
+    print (" [+] detected Queue %s" % q_num0)
     os.system("iptables -A INPUT -t mangle -j NFQUEUE --queue-num %s" % q_num0) 
     proc = Process(target=init,args=(q_num0,))
     procs.append(proc)
@@ -961,7 +982,9 @@ def main():
   # p0f mode
   if (opts.osgenre):
     global home_ip
-    home_ip = get_ip_address(interface)  
+    home_ip = get_ip_address(interface)
+    print (" [+] detected home_ip %s" % home_ip)
+    print (" [+] detected Queue %s" % q_num1)
     os.system("iptables -A OUTPUT -t mangle -p TCP --syn -j NFQUEUE --queue-num %s" % q_num1) 
     proc = Process(target=init,args=(q_num1,))
     procs.append(proc)
