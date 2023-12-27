@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
@@ -12,7 +12,7 @@ from past.utils import old_div
 from random import randint
 import hashlib
 import logging
-from . import module_p0f
+import module_p0f
 import socket
 import fcntl
 import struct
@@ -20,7 +20,8 @@ import optparse
 import sys
 import time
 import os
-import netfilterqueue as nfqueue
+#import netfilterqueue as nfqueue
+from netfilterqueue import NetfilterQueue
 import configparser
 import ast
 l = logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
@@ -821,12 +822,12 @@ def update_nmap_db():
   new_db=m.hexdigest()
   old_db=md5(get_nmap_os_db_path())
   if (new_db != old_db):
-		f = open(get_nmap_os_db_path(), "w")
-		f.write(data)
-		f.close()
-		print("updated!")
+    f = open(get_nmap_os_db_path(), "w")
+    f.write(data)
+    f.close()
+    print("updated!")
   else:
-	  print("latest!")
+    print("latest!")
 
 def md5(fname):
   hash_md5 = hashlib.md5()
