@@ -11,7 +11,7 @@ setuptools.setup(
     description='OSfooler-ng prevents remote OS active/passive fingerprinting by tools like nmap or p0f',
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url='https://github.com/segofensiva/OSfooler-ng',
+    url='https://github.com/staticgears/OSfooler-ng',
     include_package_data=True,
     entry_points = {
         'console_scripts': ['osfooler-ng=osfooler_ng.osfooler_ng:main'],
@@ -26,5 +26,5 @@ setuptools.setup(
         "Programming Language :: Python",
         "Topic :: Security",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)"
-],
+    ],
 )
