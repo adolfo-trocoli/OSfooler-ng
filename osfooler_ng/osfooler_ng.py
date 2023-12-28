@@ -20,8 +20,8 @@ import optparse
 import sys
 import time
 import os
-#import netfilterqueue as nfqueue
-from netfilterqueue import NetfilterQueue
+import netfilterqueue as nfqueue
+#from netfilterqueue import NetfilterQueue
 import configparser
 import ast
 l = logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
