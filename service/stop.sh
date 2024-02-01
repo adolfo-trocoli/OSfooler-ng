@@ -1,3 +1,6 @@
 #!/bin/bash
 dir=$(/usr/bin/dirname $0)
-pkill -9 $(cat ${dir}/service.pid)
+parent=$(cat ${dir}/service.pid)
+child=$(ps -o pid --no-headers --ppid  ${parent})
+grandchildren=$(ps -o pid --no-headers --ppid  ${child})
+kill -9 ${grandchildren} ${child}

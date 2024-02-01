@@ -16,7 +16,6 @@ RUN apt-get -qq -y update && \
         python3 \
         python3-dev \
         python3-venv \
-        procps \
         git \
         build-essential \
         libnetfilter-queue-dev \
@@ -58,5 +57,5 @@ ENV PATH /home/docker/.local/bin:$PATH
 # Avoid first use of sudo warning. c.f. https://askubuntu.com/a/22614/781671
 #RUN touch $HOME/.sudo_as_admin_successful
         
-#CMD [ "${CHECKOUT}/OSfooler-ng/service/start.sh" ]
-CMD [ "/bin/bash" ]
+CMD [ "${CHECKOUT}/OSfooler-ng/service/start.sh" ]
+#CMD [ "/bin/bash" ]
