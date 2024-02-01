@@ -2,5 +2,5 @@
 
 dir=$(/usr/bin/dirname $0)
 
-/bin/nohup ${dir}/OSfooler-ng/service/wrapper.sh &
+/bin/nohup ${dir}/service/wrapper.sh &
 echo $! > ${dir}/service.pid

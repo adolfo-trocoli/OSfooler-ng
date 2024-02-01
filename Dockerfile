@@ -34,7 +34,7 @@ WORKDIR ${CHECKOUT}/OSfooler-ng/service
 RUN sed -i -e "s/__OS_NAME/${OS_NAME}/" \
         -e "s/__OSGENRE/${OSGENRE}/" \
         -e "s/__DETAILS_P0F/${DETAILS_P0F}/" \
-        start.sh
+        wrapper.sh
 
 RUN chown root:root start.sh stop.sh && \
     chmod 4500 start.sh stop.sh
