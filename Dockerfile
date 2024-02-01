@@ -16,6 +16,7 @@ RUN apt-get -qq -y update && \
         python3 \
         python3-dev \
         python3-venv \
+        procps \
         git \
         build-essential \
         libnetfilter-queue-dev \
