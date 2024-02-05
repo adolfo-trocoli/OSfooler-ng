@@ -20,6 +20,7 @@ import optparse
 import sys
 import time
 import os
+import binascii
 import netfilterqueue as nfqueue
 #from netfilterqueue import NetfilterQueue
 import configparser
@@ -643,7 +644,7 @@ def cb_p0f( pl ):
 
     #if (inet_ntoa(pkt.src) == home_ip) and (pkt.p == ip.IP_PROTO_TCP) and (tcp_flags(pkt.tcp.flags) == "S"):
     if (pkt.p == ip.IP_PROTO_TCP) and (tcp_flags(pkt.tcp.flags) == "S"): 
-        options = pkt.tcp.opts.encode('hex_codec')
+        options = binascii.hexlify(pkt.tcp.opts).decode('utf-8')
         op = options.find("080a")
         if (op != -1):
             op = op + 7
@@ -655,7 +656,7 @@ def cb_p0f( pl ):
                     sport=pkt.tcp.sport, dport=pkt.tcp.dport, flags='S', seq=pkt.tcp.seq, ack=0)), i, osgenre=opts.osgenre, osdetails=opts.details_p0f)
                 if opts.verbose:
                     print_tcp_packet(pl, "p0f")
-                pl.set_payload(str(pkt_send))
+                pl.set_payload(bytes(pkt_send))
                 pl.accept()  
             except Exception as e:
                 print(" [+] Unable to modify packet with p0f personality...")
@@ -667,7 +668,7 @@ def cb_p0f( pl ):
                     sport=pkt.tcp.sport, dport=pkt.tcp.dport, flags='S', seq=pkt.tcp.seq)), i, osgenre=opts.osgenre)
                 if opts.verbose:
                   print_tcp_packet(pl, "p0f") 
-                pl.set_payload(str(pkt_send))
+                pl.set_payload(bytes(pkt_send))
                 pl.accept() 
             except Exception as e:
                 print(" [+] Unable to modify packet with p0f personality...")
@@ -686,7 +687,7 @@ def cb_nmap( pl):
     pkt = ip.IP(pl.get_payload())   
     if pkt.p == ip.IP_PROTO_TCP:
         # Define vars for conditional loops
-        options = pkt.tcp.opts.encode('hex_codec')
+        options = binascii.hexlify(pkt.tcp.opts).decode('utf-8')
         flags = tcp_flags(pkt.tcp.flags)
         if (flags == "S") and (pkt.tcp.win == 1) and (options == T1_opt1):
             # nmap packet detected: Packet1 #1
