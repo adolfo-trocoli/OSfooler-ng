@@ -602,26 +602,24 @@ def options_to_scapy(x):
     return options
 
 def print_tcp_packet(pl, destination): 
-    pkt = ip.IP(pl.get_payload())
-    option_list = tcp.parse_opts(pkt.tcp.opts)
-    
     if opts.verbose:
+        pkt = ip.IP(pl.get_payload())
+        option_list = tcp.parse_opts(pkt.tcp.opts)
         print(" [+] Modifying '%s' packet in real time (total length %s)" % (destination, pl.get_payload_len()))
         print("      [+] IP:  source %s destination %s tos %s id %s" % (inet_ntoa(pkt.src), inet_ntoa(pkt.dst), pkt.tos, pkt.id))
         print("      [+] TCP: sport %s dport %s flags S seq %s ack %s win %s" % (pkt.tcp.sport, pkt.tcp.dport, pkt.tcp.seq, pkt.tcp.ack, pkt.tcp.win))
         print("               options %s" % (opts_human(option_list)))
 
 def print_icmp_packet(pl): 
-    pkt = ip.IP(pl.get_payload())
     if opts.verbose:
+        pkt = ip.IP(pl.get_payload())
         print(" [+] Modifying packet in real time (total length %s)" % pl.get_payload_len())
         print("      [+] IP:   source %s destination %s tos %s id %s" % (inet_ntoa(pkt.src), inet_ntoa(pkt.dst), pkt.tos, pkt.id))
         print("      [+] ICMP: code %s type %s len %s id %s seq %s" % (pkt.icmp.code, pkt.icmp.type, len(pkt.icmp.data.data), pkt.icmp.data.id, pkt.icmp.data.seq))
 
 def print_udp_packet(pl): 
-    pkt = ip.IP(pl.get_payload())
-
     if opts.verbose:
+        pkt = ip.IP(pl.get_payload())
         print(" [+] Modifying packet in real time (total length %s)" % pl.get_payload_len())
         print("      [+] IP:   source %s destination %s tos %s id %s" % (inet_ntoa(pkt.src), inet_ntoa(pkt.dst), pkt.tos, pkt.id))
         print("      [+] UDP:  sport %s dport %s len %s" % (pkt.udp.sport, pkt.udp.dport, len(pkt.udp.data)))
@@ -984,7 +982,7 @@ def main():
   # nmap mode
   if opts.os:
     print (" [+] detected Queue %s" % q_num0)
-    os.system("iptables -A INPUT -t mangle -j NFQUEUE --queue-num %s" % q_num0) 
+    os.system("nice -n -20 iptables -A INPUT -t mangle -j NFQUEUE --queue-num %s" % q_num0)
     proc = Process(target=init,args=(q_num0,))
     procs.append(proc)
     proc.start() 
@@ -994,7 +992,7 @@ def main():
     home_ip = get_ip_address(interface)
     print (" [+] detected home_ip %s" % home_ip)
     print (" [+] detected Queue %s" % q_num1)
-    os.system("iptables -A OUTPUT -t mangle -p TCP --syn -j NFQUEUE --queue-num %s" % q_num1) 
+    os.system("nice -n -20 iptables -A OUTPUT -t mangle -p TCP --syn -j NFQUEUE --queue-num %s" % q_num1)
     proc = Process(target=init,args=(q_num1,))
     procs.append(proc)
     proc.start() 
