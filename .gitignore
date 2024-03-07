@@ -122,3 +122,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+service/service.pid
+osfooler.o
+osfooler
+bubble
