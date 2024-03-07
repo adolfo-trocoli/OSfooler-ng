@@ -47,7 +47,8 @@ service: $(SYSTEM)/osfooler.service $(SYSTEM)/osfooler.service.d $(SYSTEM)/osfoo
 	chown -R root:root $(ROOTDIR)
 	chmod -R go=r $(ROOTDIR)
 	systemctl daemon-reload
-	systemctl enable osfooler.service
+	systemctl start osfooler
+	systemctl enable osfooler
 
 $(VENV):
 	$(PYTHON) -m venv $@
