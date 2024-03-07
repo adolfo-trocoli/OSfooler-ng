@@ -20,9 +20,11 @@
 #define LOG_FILE DIR "service/service.log"
 #define PID_FILE DIR "service/service.pid"
 
-#define VENV "VIRTUAL_ENV=\"DIR/bubble\""
+#define CLEAN_PATH "PATH=" DIR VENV "/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+#define VIRTUAL_ENV "VIRTUAL_ENV=\"" DIR "/" VENV "\""
+
 #define BINARY_NAME "python3"
-#define BINARY DIR "/" VENV "/bin/" BINARY_NAME
+#define BINARY DIR VENV "/bin/" BINARY_NAME
 #define SCRIPT DIR "osfooler_ng/osfooler_ng.py"
 
 #define DEFAULT_OSNAME "Microsoft Windows 2000 SP4"
@@ -82,7 +84,7 @@ void start(int argc, char *argv[]) {
     dup2(file_desc, STDERR_FILENO);     // stderr
 
     // Clean environment
-    char *envp[] = { VENV, NULL };
+    char *envp[] = { CLEAN_PATH, VIRTUAL_ENV, NULL };
 
     // Execute the PROGRAM
     //-m ${1} -o ${2} -d ${3}
