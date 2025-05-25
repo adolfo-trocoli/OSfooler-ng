@@ -12,7 +12,6 @@ from past.utils import old_div
 from random import randint
 import hashlib
 import logging
-import module_p0f
 import socket
 import fcntl
 import struct
@@ -24,7 +23,9 @@ import binascii
 import netfilterqueue as nfqueue
 #from netfilterqueue import NetfilterQueue
 import configparser
-import ast
+
+#dscf
+#import ast
 l = logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import *
 from dpkt import *
@@ -37,9 +38,11 @@ from multiprocessing import Process
 sys.tracebacklimit = 0
 conf.verbose = 0
 conf.L3socket = L3RawSocket
-sys.path.append('python')
-sys.path.append('build/python')
-sys.path.append('dpkt-1.6')
+
+#dscf
+#sys.path.append('python')
+#sys.path.append('build/python')
+#sys.path.append('dpkt-1.6')
 
 # Initialize statistic variables
 icmp_packet = 0
@@ -861,12 +864,13 @@ def main():
                     dest='nmap', help="list available nmap signatures")
   parser.add_option('-m', '--os_nmap', action='store',
                     dest='os', help="use nmap Operating System")
-  parser.add_option('-p', '--p0f', action='store_true',
-                    dest='p0f', help="list available p0f v2 signatures")
-  parser.add_option('-o', '--os_p0f', action='store',
-                    dest='osgenre', help="use p0f v2 OS Genre")
-  parser.add_option('-d', '--details_p0f',
-                    action='store', dest='details_p0f', help="choose p0f v2 Details")
+  #dscf
+  #parser.add_option('-p', '--p0f', action='store_true',
+  #                  dest='p0f', help="list available p0f v2 signatures")
+  #parser.add_option('-o', '--os_p0f', action='store',
+  #                  dest='osgenre', help="use p0f v2 OS Genre")
+  #parser.add_option('-d', '--details_p0f',
+  #                  action='store', dest='details_p0f', help="choose p0f v2 Details")
   parser.add_option('-i', '--interface', action='store',
                     dest='interface', help="choose network interface (eth0)")
   parser.add_option('-s', '--search', action='store',
@@ -897,24 +901,27 @@ def main():
     list_os()
     exit(0)
 
-  if opts.p0f:
-    print("Please, select p0f OS Genre and Details")
-    db = module_p0f.p0f_kdb.get_base()
-    for i in range(0, len(db)):
-      print("\tOS Genre=\"%s\" Details=\"%s\"" % (db[i][6], db[i][7]))
-    exit(0)
+  #dscf
+  #if opts.p0f:
+  #  print("Please, select p0f OS Genre and Details")
+  #  db = module_p0f.p0f_kdb.get_base()
+  #  for i in range(0, len(db)):
+  #    print("\tOS Genre=\"%s\" Details=\"%s\"" % (db[i][6], db[i][7]))
+  #  exit(0)
 
-  if not opts.os and (not (opts.details_p0f and not opts.osgenre)) and (not opts.osgenre):
+  #dscf
+  if not opts.os: # and (not (opts.details_p0f and not opts.osgenre)) and (not opts.osgenre):
     print(" [ERROR] Please, choose a nmap or p0f OS system to emulate")
     print(" [+] Use %s -h to get more information" % sys.argv[0])
     print()
     sys.exit(' [+] Aborting...')
 
-  if (opts.details_p0f and not opts.osgenre):
-    print(" [ERROR] Please, choose p0f OS system to emulate, not only OS details")
-    print(" [+] Use %s -p to list possible candidates" % sys.argv[0])
-    print()
-    sys.exit(' [+] Aborting...')
+  #dscf
+  #if (opts.details_p0f and not opts.osgenre):
+  #  print(" [ERROR] Please, choose p0f OS system to emulate, not only OS details")
+  #  print(" [+] Use %s -p to list possible candidates" % sys.argv[0])
+  #  print()
+  #  sys.exit(' [+] Aborting...')
 
   # Check if user is root before continue
   user_is_root()
@@ -950,31 +957,33 @@ def main():
       print("      [->] \"%s\" could not be found in nmap database..." % opts.os)
       sys.exit(' [+] Aborting...')
 
-  if (opts.osgenre):
-    print(" [+] Mutating to p0f:")
-    db = module_p0f.p0f_kdb.get_base()
-    exists = 0
-    db_size = len(db)
-    if (opts.osgenre == "random"):
-      rand_os = randint(0,db_size)
-      opts.osgenre = db[rand_os][6]
-    if (not opts.details_p0f):
-      for i in range(0, db_size):
-        if (db[i][6] == opts.osgenre):
-          print("      WWW:%s|TTL:%s|D:%s|SS:%s|OOO:%s|QQ:%s|OS:%s|DETAILS:%s" % (db[i][0],db[i][1],db[i][2],db[i][3],db[i][4],db[i][5],db[i][6],db[i][7]))
-          exists = 1
-    if (opts.details_p0f):
-      for i in range(0, db_size):
-        if (db[i][6] == opts.osgenre and db[i][7] == opts.details_p0f):
-          print("      WWW:%s|TTL:%s|D:%s|SS:%s|OOO:%s|QQ:%s|OS:%s|DETAILS:%s" % (db[i][0],db[i][1],db[i][2],db[i][3],db[i][4],db[i][5],db[i][6],db[i][7]))
-          exists = 1
-          break
-    if (not exists):
-      print("      [->] Could not found that combination in p0f database...")
-      sys.exit(' [+] Aborting...')
+  #dscf
+  #if (opts.osgenre):
+  #  print(" [+] Mutating to p0f:")
+  #  db = module_p0f.p0f_kdb.get_base()
+  #  exists = 0
+  #  db_size = len(db)
+  #  if (opts.osgenre == "random"):
+  #    rand_os = randint(0,db_size)
+  #    opts.osgenre = db[rand_os][6]
+  #  if (not opts.details_p0f):
+  #    for i in range(0, db_size):
+  #      if (db[i][6] == opts.osgenre):
+  #        print("      WWW:%s|TTL:%s|D:%s|SS:%s|OOO:%s|QQ:%s|OS:%s|DETAILS:%s" % (db[i][0],db[i][1],db[i][2],db[i][3],db[i][4],db[i][5],db[i][6],db[i][7]))
+  #        exists = 1
+  #  if (opts.details_p0f):
+  #    for i in range(0, db_size):
+  #      if (db[i][6] == opts.osgenre and db[i][7] == opts.details_p0f):
+  #        print("      WWW:%s|TTL:%s|D:%s|SS:%s|OOO:%s|QQ:%s|OS:%s|DETAILS:%s" % (db[i][0],db[i][1],db[i][2],db[i][3],db[i][4],db[i][5],db[i][6],db[i][7]))
+  #        exists = 1
+  #        break
+  #  if (not exists):
+  #    print("      [->] Could not found that combination in p0f database...")
+  #    sys.exit(' [+] Aborting...')
 
-  if (not opts.details_p0f and opts.osgenre):
-      print(" [i] You've only selected p0f OS genre. Details will be chosen randomly every packet from the list bellow")
+  #dscf
+  #if (not opts.details_p0f and opts.osgenre):
+  #    print(" [i] You've only selected p0f OS genre. Details will be chosen randomly every packet from the list bellow")
   
   # Start activity
   print(" [+] Activating queues")
@@ -987,15 +996,16 @@ def main():
     procs.append(proc)
     proc.start() 
   # p0f mode
-  if (opts.osgenre):
-    global home_ip
-    home_ip = get_ip_address(interface)
-    print (" [+] detected home_ip %s" % home_ip)
-    print (" [+] detected Queue %s" % q_num1)
-    os.system("nice -n -20 iptables -A OUTPUT -t mangle -p TCP --syn -j NFQUEUE --queue-num %s" % q_num1)
-    proc = Process(target=init,args=(q_num1,))
-    procs.append(proc)
-    proc.start() 
+  #dscf
+  #if (opts.osgenre):
+  #  global home_ip
+  #  home_ip = get_ip_address(interface)
+  #  print (" [+] detected home_ip %s" % home_ip)
+  #  print (" [+] detected Queue %s" % q_num1)
+  #  os.system("nice -n -20 iptables -A OUTPUT -t mangle -p TCP --syn -j NFQUEUE --queue-num %s" % q_num1)
+  #  proc = Process(target=init,args=(q_num1,))
+  #  procs.append(proc)
+  #  proc.start() 
   # Detect mode
 
   try:
