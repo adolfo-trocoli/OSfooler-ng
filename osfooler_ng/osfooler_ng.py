@@ -50,7 +50,8 @@ IPID = 0
 
 # Started NFQueues
 q_num0 = -1
-q_num1 = -1
+#dscf
+#q_num1 = -1
 
 # TCP packet information
 # Control flags
@@ -118,6 +119,126 @@ T7w = "65535"
 ECEw = "3"
 # Payloads
 udp_payload = "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
+
+# bhe
+# --- Host discovery tracking (for -z option) ---
+host_discovery_tracker = {}
+global host_discovery_config
+
+def mark_as_seen(pkt_type, ip_src, detail=None):
+    now = time.time()
+    if ip_src not in host_discovery_tracker:
+        host_discovery_tracker[ip_src] = {
+            "timestamp": now,
+            "icmp": set(),
+            "syn_ports": set(),
+            "ack_ports": set(),
+            "arp": False,
+        }
+    entry = host_discovery_tracker[ip_src]
+    if pkt_type == "icmp":
+        entry["icmp"].add(detail)
+    elif pkt_type == "syn":
+        entry["syn_ports"].add(detail)
+    elif pkt_type == "ack":
+        entry["ack_ports"].add(detail)
+    elif pkt_type == "arp":
+        entry["arp"] = True
+
+def previously_seen(pkt_type, ip_src, detail=None):
+    entry = host_discovery_tracker.get(ip_src)
+    if not entry:
+        return False
+    if pkt_type == "icmp":
+        return detail in entry["icmp"]
+    elif pkt_type == "syn":
+        return detail in entry["syn_ports"]
+    elif pkt_type == "ack":
+        return detail in entry["ack_ports"]
+    elif pkt_type == "arp":
+        return entry["arp"]
+    return False
+
+def parse_z_argument(z_value):
+    config = {
+        "icmp_types": [],
+        "syn_ports": [],
+        "ack_ports": [],
+        "arp_enabled": False
+    }
+
+    entries = z_value.split(',')
+    for entry in entries:
+        entry = entry.strip().upper()
+        if entry == 'PE':
+            config["icmp_types"].append(8)
+        elif entry == 'PP':
+            config["icmp_types"].append(13)
+        elif entry == 'PM':
+            config["icmp_types"].append(17)
+        elif entry == 'PR':
+            config["arp_enabled"] = True
+        elif entry.startswith('PS'):
+            try:
+                ports = entry[2:].split(',')
+                config["syn_ports"].extend([int(p) for p in ports if p])
+            except ValueError:
+                print("Error in PS value")
+        elif entry.startswith('PA'):
+            try:
+                ports = entry[2:].split(',')
+                config["ack_ports"].extend([int(p) for p in ports if p])
+            except ValueError:
+                print("Error in PA value")
+    return config
+
+def is_host_discovery_packet(pkt, config=None):
+  """
+    Detecta si un paquete es parte de un escaneo de descubrimiento de hosts de Nmap.
+
+    :param pkt: Paquete de Scapy.
+    :param config: Diccionario con:
+        - icmp_types: lista de tipos ICMP (e.g. [8, 13])
+        - syn_ports: lista de puertos destino con flag SYN (e.g. [443])
+        - ack_ports: lista de puertos destino con flag ACK (e.g. [80])
+        - arp_enabled: bool (True para detectar ARP who-has)
+    :return: True si el paquete es de host discovery, False si no.
+    """
+
+    # Config por defecto si no se especifica
+    default_config = {
+        "icmp_types": [8, 13],     # PE, PP
+        "syn_ports": [443],        # PS443
+        "ack_ports": [80],         # PA80
+        "arp_enabled": True        # PR
+    }
+    config = config or default_config
+
+    if IP in pkt:
+        ip_src = pkt[IP].src
+        if ICMP in pkt and pkt[ICMP].type in config["icmp_types"]:
+            if not previously_seen("icmp", ip_src, pkt[ICMP].type):
+                mark_as_seen("icmp", ip_src, pkt[ICMP].type)
+                return True
+        if TCP in pkt:
+            tcp = pkt[TCP]
+            if tcp.flags == 0x02 and tcp.dport in config["syn_ports"]:  # SYN
+                if not previously_seen("syn", ip_src, tcp.dport):
+                    mark_as_seen("syn", ip_src, tcp.dport)
+                    return True
+            if tcp.flags == 0x10 and tcp.dport in config["ack_ports"]:  # ACK
+                if not previously_seen("ack", ip_src, tcp.dport):
+                    mark_as_seen("ack", ip_src, tcp.dport)
+                    return True
+    if ARP in pkt and config["arp_enabled"] and pkt[ARP].op == 1:
+        ip_src = pkt[ARP].psrc
+        if not previously_seen("arp", ip_src):
+            mark_as_seen("arp", ip_src)
+            return True
+    return False
+
+# ehe
+
 
 # Parse fields in nmap-db
 def parse_nmap_field(field):
@@ -556,14 +677,15 @@ def search_os(search_string):
       print("      [nmap] \"%s\"" % nmap_values[x])
     #
     # Search p0f database
-    db = module_p0f.p0f_kdb.get_base()
-    p0f_values = []
-    for i in range(0, len(db)):
-      if (re.search(search_string, db[i][6], re.IGNORECASE) or re.search(search_string, db[i][7], re.IGNORECASE)) :
-        p0f_values.append("OS: \"" + db[i][6] + "\" DETAILS: \"" + db[i][7] + "\"")
-    # Print results
-    for x in range(len(p0f_values)):
-      print("      [p0f] %s" % p0f_values[x])
+    # dscf
+    # db = module_p0f.p0f_kdb.get_base()
+    # p0f_values = []
+    # for i in range(0, len(db)):
+    #   if (re.search(search_string, db[i][6], re.IGNORECASE) or re.search(search_string, db[i][7], re.IGNORECASE)) :
+    #     p0f_values.append("OS: \"" + db[i][6] + "\" DETAILS: \"" + db[i][7] + "\"")
+    # # Print results
+    # for x in range(len(p0f_values)):
+    #   print("      [p0f] %s" % p0f_values[x])
     exit(0)
 
 def options_to_scapy(x):
@@ -634,58 +756,67 @@ def print_udp_packet(pl):
         print("                     %s" % (pkt.udp.data[250:299]))
 
 # Process p0f packets
-def cb_p0f( pl ): 
+# dscf
+# def cb_p0f( pl ): 
 
-    pkt = ip.IP(pl.get_payload())
+#     pkt = ip.IP(pl.get_payload())
     
-    # that condition is too complex, I had to drop SourceIP check, so it will work with PolicyBasedRouting.
-    #
-    # During PolicyBasedRouting, when we afterwards route the packets via
-    # .. another interface, its SRC_IP remains always of main interface, as TCP stack sees it.
+#     # that condition is too complex, I had to drop SourceIP check, so it will work with PolicyBasedRouting.
+#     #
+#     # During PolicyBasedRouting, when we afterwards route the packets via
+#     # .. another interface, its SRC_IP remains always of main interface, as TCP stack sees it.
 
-    #if (inet_ntoa(pkt.src) == home_ip) and (pkt.p == ip.IP_PROTO_TCP) and (tcp_flags(pkt.tcp.flags) == "S"):
-    if (pkt.p == ip.IP_PROTO_TCP) and (tcp_flags(pkt.tcp.flags) == "S"): 
-        options = binascii.hexlify(pkt.tcp.opts).decode('utf-8')
-        op = options.find("080a")
-        if (op != -1):
-            op = op + 7
-            timestamp = options[op:][:5]
-            i = int(timestamp, 16)
-        if opts.osgenre and opts.details_p0f:
-            try:
-                pkt_send = module_p0f.p0f_impersonate(old_div(IP(dst=inet_ntoa(pkt.dst), src=inet_ntoa(pkt.src), id=pkt.id, tos=pkt.tos), TCP(
-                    sport=pkt.tcp.sport, dport=pkt.tcp.dport, flags='S', seq=pkt.tcp.seq, ack=0)), i, osgenre=opts.osgenre, osdetails=opts.details_p0f)
-                if opts.verbose:
-                    print_tcp_packet(pl, "p0f")
-                pl.set_payload(bytes(pkt_send))
-                pl.accept()  
-            except Exception as e:
-                print(" [+] Unable to modify packet with p0f personality...")
-                print(" [+] Aborting")
-                sys.exit()
-        elif opts.osgenre and not opts.details_p0f:
-            try:
-                pkt_send = module_p0f.p0f_impersonate(old_div(IP(dst=inet_ntoa(pkt.dst), src=inet_ntoa(pkt.src)), TCP(
-                    sport=pkt.tcp.sport, dport=pkt.tcp.dport, flags='S', seq=pkt.tcp.seq)), i, osgenre=opts.osgenre)
-                if opts.verbose:
-                  print_tcp_packet(pl, "p0f") 
-                pl.set_payload(bytes(pkt_send))
-                pl.accept() 
-            except Exception as e:
-                print(" [+] Unable to modify packet with p0f personality...")
-                print(" [+] Aborting")
-                sys.exit()
-        else:
-            pl.accept()
-    else:
-        pl.accept()
-        if opts.verbose:
-            print(" [+] Ignored packet:   source %s destination %s tos %s id %s" % (inet_ntoa(pkt.src), inet_ntoa(pkt.dst), pkt.tos, pkt.id))
+#     #if (inet_ntoa(pkt.src) == home_ip) and (pkt.p == ip.IP_PROTO_TCP) and (tcp_flags(pkt.tcp.flags) == "S"):
+#     if (pkt.p == ip.IP_PROTO_TCP) and (tcp_flags(pkt.tcp.flags) == "S"): 
+#         options = binascii.hexlify(pkt.tcp.opts).decode('utf-8')
+#         op = options.find("080a")
+#         if (op != -1):
+#             op = op + 7
+#             timestamp = options[op:][:5]
+#             i = int(timestamp, 16)
+#         if opts.osgenre and opts.details_p0f:
+#             try:
+#                 pkt_send = module_p0f.p0f_impersonate(old_div(IP(dst=inet_ntoa(pkt.dst), src=inet_ntoa(pkt.src), id=pkt.id, tos=pkt.tos), TCP(
+#                     sport=pkt.tcp.sport, dport=pkt.tcp.dport, flags='S', seq=pkt.tcp.seq, ack=0)), i, osgenre=opts.osgenre, osdetails=opts.details_p0f)
+#                 if opts.verbose:
+#                     print_tcp_packet(pl, "p0f")
+#                 pl.set_payload(bytes(pkt_send))
+#                 pl.accept()  
+#             except Exception as e:
+#                 print(" [+] Unable to modify packet with p0f personality...")
+#                 print(" [+] Aborting")
+#                 sys.exit()
+#         elif opts.osgenre and not opts.details_p0f:
+#             try:
+#                 pkt_send = module_p0f.p0f_impersonate(old_div(IP(dst=inet_ntoa(pkt.dst), src=inet_ntoa(pkt.src)), TCP(
+#                     sport=pkt.tcp.sport, dport=pkt.tcp.dport, flags='S', seq=pkt.tcp.seq)), i, osgenre=opts.osgenre)
+#                 if opts.verbose:
+#                   print_tcp_packet(pl, "p0f") 
+#                 pl.set_payload(bytes(pkt_send))
+#                 pl.accept() 
+#             except Exception as e:
+#                 print(" [+] Unable to modify packet with p0f personality...")
+#                 print(" [+] Aborting")
+#                 sys.exit()
+#         else:
+#             pl.accept()
+#     else:
+#         pl.accept()
+#         if opts.verbose:
+#             print(" [+] Ignored packet:   source %s destination %s tos %s id %s" % (inet_ntoa(pkt.src), inet_ntoa(pkt.dst), pkt.tos, pkt.id))
       #  return 0
 
 # Process nmap packets
-def cb_nmap( pl): 
+def cb_nmap(pl): 
     pkt = ip.IP(pl.get_payload())   
+    
+    # bhe
+    if opts.detect_hostdiscovery and is_host_discovery_packet(pl.get_payload()):
+        print(" [+] Host discovery packet detected from", ip.IP(pl.get_payload()).src)
+        pl.drop()
+        return
+    # ehe
+
     if pkt.p == ip.IP_PROTO_TCP:
         # Define vars for conditional loops
         options = binascii.hexlify(pkt.tcp.opts).decode('utf-8')
@@ -804,9 +935,10 @@ def init(queue):
   if (queue % 2 ==  0):
     q.bind(queue, cb_nmap)
     print("      [->] %s: nmap packet processor" % multiprocessing.current_process().name)
-  if (queue % 2 ==  1 and (opts.osgenre or (opts.details_p0f and opts.osgenre))):
-    q.bind(queue, cb_p0f)
-    print("      [->] %s: p0f packet processor" % multiprocessing.current_process().name)
+  # dscf
+  # if (queue % 2 ==  1 and (opts.osgenre or (opts.details_p0f and opts.osgenre))):
+  #   q.bind(queue, cb_p0f)
+  #   print("      [->] %s: p0f packet processor" % multiprocessing.current_process().name)
   try: 
     q.run()
   except KeyboardInterrupt as err:
@@ -860,6 +992,10 @@ def main():
   # Main program begins here
   show_banner()
   parser = optparse.OptionParser()
+  # bhe
+  parser.add_option('-z', '--detect-hostdiscovery', action='store', dest='z_config',
+                  help="activar detección de escaneo de descubrimiento de hosts.")
+  # ehe
   parser.add_option('-n', '--nmap', action='store_true',
                     dest='nmap', help="list available nmap signatures")
   parser.add_option('-m', '--os_nmap', action='store',
@@ -884,6 +1020,12 @@ def main():
   global opts
   (opts, args) = parser.parse_args()
 
+# bhe
+  if opts.z_config:
+    host_discovery_config = parse_z_argument(opts.z_config)
+  else:
+    host_discovery_config = None
+# ehe
   if opts.search:
     search_os(opts.search)
     exit(0)
@@ -910,8 +1052,9 @@ def main():
   #  exit(0)
 
   #dscf
-  if not opts.os: # and (not (opts.details_p0f and not opts.osgenre)) and (not opts.osgenre):
-    print(" [ERROR] Please, choose a nmap or p0f OS system to emulate")
+  # bhe ehe (el and not opts.z_config)
+  if not opts.os and not opts.z_config: # and (not (opts.details_p0f and not opts.osgenre)) and (not opts.osgenre):
+    print(" [ERROR] Please, choose an OS system to emulate or activate host detection evasion.")
     print(" [+] Use %s -h to get more information" % sys.argv[0])
     print()
     sys.exit(' [+] Aborting...')
@@ -989,7 +1132,7 @@ def main():
   print(" [+] Activating queues")
   procs = []
   # nmap mode
-  if opts.os:
+  if opts.os or opts.z_config:
     print (" [+] detected Queue %s" % q_num0)
     os.system("nice -n -20 iptables -A INPUT -t mangle -j NFQUEUE --queue-num %s" % q_num0)
     proc = Process(target=init,args=(q_num0,))
