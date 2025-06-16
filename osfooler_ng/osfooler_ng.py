@@ -205,6 +205,9 @@ def is_host_discovery_packet(pkt, config=None):
     :return: True si el paquete es de host discovery, False si no.
   """
 
+  #dbg
+  print(f"[detect] Checking packet: proto={pkt.proto}")
+
   # Config por defecto si no se especifica
   default_config = {
       "icmp_types": [8, 13],     # PE, PP
@@ -217,21 +220,29 @@ def is_host_discovery_packet(pkt, config=None):
   if IP in pkt:
       ip_src = pkt[IP].src
       if ICMP in pkt and pkt[ICMP].type in config["icmp_types"]:
+          #dbg
+          print(f"[detect] ICMP type {pkt[ICMP].type}") 
           if not previously_seen("icmp", ip_src, pkt[ICMP].type):
               mark_as_seen("icmp", ip_src, pkt[ICMP].type)
               return True
       if TCP in pkt:
           tcp = pkt[TCP]
           if tcp.flags == 0x02 and tcp.dport in config["syn_ports"]:  # SYN
+              #dbg
+              print(f"[detect] SYN {pkt[TCP].dport}")
               if not previously_seen("syn", ip_src, tcp.dport):
                   mark_as_seen("syn", ip_src, tcp.dport)
                   return True
           if tcp.flags == 0x10 and tcp.dport in config["ack_ports"]:  # ACK
+              #dbg
+              print(f"[detect] ACK {pkt[TCP].dport}")
               if not previously_seen("ack", ip_src, tcp.dport):
                   mark_as_seen("ack", ip_src, tcp.dport)
                   return True
   if ARP in pkt and config["arp_enabled"] and pkt[ARP].op == 1:
       ip_src = pkt[ARP].psrc
+      #dbg
+      print(f"[detect] ARP who-has {pkt[ARP].psrc}")
       if not previously_seen("arp", ip_src):
           mark_as_seen("arp", ip_src)
           return True
@@ -809,7 +820,11 @@ def print_udp_packet(pl):
 # Process nmap packets
 def cb_nmap(pl): 
     pkt = ip.IP(pl.get_payload())   
-    
+
+    #dbg
+    print(f"[cb_nmap] Packet received: proto={pkt.proto}, src={pkt.src}, dst={pkt.dst}")
+
+
     # bhe
     if opts.z_config and is_host_discovery_packet(pkt, config=host_discovery_config):
         print(" [+] Host discovery packet detected from", ip.IP(pl.get_payload()).src)
