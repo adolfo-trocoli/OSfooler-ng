@@ -1100,18 +1100,22 @@ def main():
     interface = opts.interface 
     try:
       q_num0 = os.listdir("/sys/class/net/").index(opts.interface) * 2
-      q_num1 = os.listdir("/sys/class/net/").index(opts.interface) * 2 + 1
+    # dscf
+    #  q_num1 = os.listdir("/sys/class/net/").index(opts.interface) * 2 + 1
     except ValueError as err:
       q_num0 = -1
-      q_num1 = -1
+    # dscf
+    #  q_num1 = -1
   else:
     interface = get_default_iface_name_linux()
     try:
       q_num0 = os.listdir("/sys/class/net/").index(interface) * 2
-      q_num1 = os.listdir("/sys/class/net/").index(interface) * 2 + 1
+    # dscf
+    #  q_num1 = os.listdir("/sys/class/net/").index(interface) * 2 + 1
     except ValueError as err:
       q_num0 = -1
-      q_num1 = -1
+    # dscf
+    #  q_num1 = -1
 
   # Global -> get values from cb_nmap() and cb_p0f
   global base
@@ -1185,8 +1189,9 @@ def main():
       # Flush all iptabels rules
       if (q_num0 >= 0):
         os.system("iptables -D INPUT -t mangle -j NFQUEUE --queue-num %s" % q_num0) 
-      if (q_num1 >= 1):
-        os.system("iptables -D OUTPUT -t mangle -p TCP --syn -j NFQUEUE --queue-num %s" % q_num1) 
+      #dscf
+      #if (q_num1 >= 1):
+      #  os.system("iptables -D OUTPUT -t mangle -p TCP --syn -j NFQUEUE --queue-num %s" % q_num1) 
       print(" [+] Active queues removed")
       print(" [+] Exiting OSfooler...") 
   except KeyboardInterrupt:
@@ -1194,8 +1199,9 @@ def main():
       # Flush all iptabels rules
       if (q_num0 >= 0):
         os.system("iptables -D INPUT -t mangle -j NFQUEUE --queue-num %s" % q_num0) 
-      if (q_num1 >= 1):
-        os.system("iptables -D OUTPUT -t mangle -p TCP --syn -j NFQUEUE --queue-num %s" % q_num1) 
+      #dscf
+      # if (q_num1 >= 1):
+      #  os.system("iptables -D OUTPUT -t mangle -p TCP --syn -j NFQUEUE --queue-num %s" % q_num1) 
       print(" [+] Active queues removed")
       print(" [+] Exiting OSfooler...")
       #for p in multiprocessing.active_children():
