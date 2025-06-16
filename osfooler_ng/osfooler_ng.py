@@ -1022,6 +1022,7 @@ def main():
 
 # bhe
   if opts.z_config:
+    global host_discovery_config
     host_discovery_config = parse_z_argument(opts.z_config)
   else:
     host_discovery_config = None
