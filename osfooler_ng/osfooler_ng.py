@@ -206,7 +206,7 @@ def is_host_discovery_packet(pkt, config=None):
   """
 
   #dbg
-  print(f"[detect] Checking packet: proto={pkt.proto}")
+  mostrar(pkt, "is_host_discovery_packet")
 
   # Config por defecto si no se especifica
   default_config = {
@@ -221,7 +221,7 @@ def is_host_discovery_packet(pkt, config=None):
       ip_src = pkt[IP].src
       if ICMP in pkt and pkt[ICMP].type in config["icmp_types"]:
           #dbg
-          print(f"[detect] ICMP type {pkt[ICMP].type}") 
+          mostrar(pkt, "ICMP")
           if not previously_seen("icmp", ip_src, pkt[ICMP].type):
               mark_as_seen("icmp", ip_src, pkt[ICMP].type)
               return True
@@ -229,20 +229,20 @@ def is_host_discovery_packet(pkt, config=None):
           tcp = pkt[TCP]
           if tcp.flags == 0x02 and tcp.dport in config["syn_ports"]:  # SYN
               #dbg
-              print(f"[detect] SYN {pkt[TCP].dport}")
+              mostrar(pkt, "TCPSYN")
               if not previously_seen("syn", ip_src, tcp.dport):
                   mark_as_seen("syn", ip_src, tcp.dport)
                   return True
           if tcp.flags == 0x10 and tcp.dport in config["ack_ports"]:  # ACK
               #dbg
-              print(f"[detect] ACK {pkt[TCP].dport}")
+              mostrar(pkt, "TCPACK")
               if not previously_seen("ack", ip_src, tcp.dport):
                   mark_as_seen("ack", ip_src, tcp.dport)
                   return True
   if ARP in pkt and config["arp_enabled"] and pkt[ARP].op == 1:
       ip_src = pkt[ARP].psrc
       #dbg
-      print(f"[detect] ARP who-has {pkt[ARP].psrc}")
+      mostrar(pkt, "ARP")
       if not previously_seen("arp", ip_src):
           mark_as_seen("arp", ip_src)
           return True
@@ -822,16 +822,7 @@ def cb_nmap(pl):
     pkt = ip.IP(pl.get_payload())   
 
     #dbg
-    proto = "UNKNOWN"
-    if ICMP in pkt:
-        proto = "ICMP"
-    elif TCP in pkt:
-        proto = "TCP"
-    elif UDP in pkt:
-        proto = "UDP"
-    elif ARP in pkt:
-        proto = "ARP"
-    print(f"[cb_nmap] Packet received: proto={proto}, src={pkt[IP].src if IP in pkt else 'N/A'}, dst={pkt[IP].dst if IP in pkt else 'N/A'}")
+    mostrar(pkt, "cb_nmap")
 
     # bhe
     if opts.z_config and is_host_discovery_packet(pkt, config=host_discovery_config):
@@ -1010,6 +1001,16 @@ def get_default_iface_name_linux():
                 return iface
             except:
                 continue
+
+#dbg
+def mostrar(pkt, mensaje=""):
+    print(f"\n[DEBUG] {mensaje}")
+    print("="*40)
+    if hasattr(pkt, 'summary'):
+        print(pkt.summary())
+    if hasattr(pkt, 'show'):
+        pkt.show()
+    print("="*40)
 
 def main():
   # Main program begins here
@@ -1198,6 +1199,8 @@ def main():
       print(" [+] Exiting OSfooler...")
       #for p in multiprocessing.active_children():
       #  p.terminate()
+
+
 
 if __name__ == "__main__":
   main()
