@@ -811,7 +811,7 @@ def cb_nmap(pl):
     pkt = ip.IP(pl.get_payload())   
     
     # bhe
-    if opts.detect_hostdiscovery and is_host_discovery_packet(pl.get_payload()):
+    if opts.z_config and is_host_discovery_packet(pl.get_payload(), config=host_discovery_config):
         print(" [+] Host discovery packet detected from", ip.IP(pl.get_payload()).src)
         pl.drop()
         return
@@ -993,7 +993,7 @@ def main():
   show_banner()
   parser = optparse.OptionParser()
   # bhe
-  parser.add_option('-z', '--detect_hostdiscovery', action='store', dest='z_config',
+  parser.add_option('-z', '--detect-hostdiscovery', action='store', dest='z_config',
                   help="activar detección de escaneo de descubrimiento de hosts.")
   # ehe
   parser.add_option('-n', '--nmap', action='store_true',
