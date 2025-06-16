@@ -822,8 +822,16 @@ def cb_nmap(pl):
     pkt = ip.IP(pl.get_payload())   
 
     #dbg
-    print(f"[cb_nmap] Packet received: proto={pkt.proto}, src={pkt.src}, dst={pkt.dst}")
-
+    proto = "UNKNOWN"
+    if ICMP in pkt:
+        proto = "ICMP"
+    elif TCP in pkt:
+        proto = "TCP"
+    elif UDP in pkt:
+        proto = "UDP"
+    elif ARP in pkt:
+        proto = "ARP"
+    print(f"[cb_nmap] Packet received: proto={proto}, src={pkt[IP].src if IP in pkt else 'N/A'}, dst={pkt[IP].dst if IP in pkt else 'N/A'}")
 
     # bhe
     if opts.z_config and is_host_discovery_packet(pkt, config=host_discovery_config):
