@@ -811,7 +811,7 @@ def cb_nmap(pl):
     pkt = ip.IP(pl.get_payload())   
     
     # bhe
-    if opts.z_config and is_host_discovery_packet(pl.get_payload(), config=host_discovery_config):
+    if opts.z_config and is_host_discovery_packet(pkt, config=host_discovery_config):
         print(" [+] Host discovery packet detected from", ip.IP(pl.get_payload()).src)
         pl.drop()
         return
