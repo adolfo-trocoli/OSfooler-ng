@@ -993,7 +993,7 @@ def main():
   show_banner()
   parser = optparse.OptionParser()
   # bhe
-  parser.add_option('-z', '--detect-hostdiscovery', action='store', dest='z_config',
+  parser.add_option('-z', '--detect_hostdiscovery', action='store', dest='z_config',
                   help="activar detección de escaneo de descubrimiento de hosts.")
   # ehe
   parser.add_option('-n', '--nmap', action='store_true',
@@ -1026,6 +1026,7 @@ def main():
   else:
     host_discovery_config = None
 # ehe
+
   if opts.search:
     search_os(opts.search)
     exit(0)
@@ -1052,7 +1053,7 @@ def main():
   #  exit(0)
 
   #dscf
-  # bhe ehe (el and not opts.z_config)
+  # bhe ehe (solo el "and not opts.z_config")
   if not opts.os and not opts.z_config: # and (not (opts.details_p0f and not opts.osgenre)) and (not opts.osgenre):
     print(" [ERROR] Please, choose an OS system to emulate or activate host detection evasion.")
     print(" [+] Use %s -h to get more information" % sys.argv[0])
