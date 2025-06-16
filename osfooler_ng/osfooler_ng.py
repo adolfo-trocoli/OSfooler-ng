@@ -819,14 +819,15 @@ def print_udp_packet(pl):
 
 # Process nmap packets
 def cb_nmap(pl): 
-    pkt = ip.IP(pl.get_payload())   
+    pkt = ip.IP(pl.get_payload())
+    pkt_scapy = Ether(pl.get_payload())   
 
     #dbg
-    mostrar(pkt, "cb_nmap")
+    mostrar(pkt_scapy, "cb_nmap")
 
     # bhe
-    if opts.z_config and is_host_discovery_packet(pkt, config=host_discovery_config):
-        print(" [+] Host discovery packet detected from", ip.IP(pl.get_payload()).src)
+    if opts.z_config and is_host_discovery_packet(pkt_scapy, config=host_discovery_config):
+        print(" [+] Host discovery packet detected from", pkt_scapy[IP].src)
         pl.drop()
         return
     # ehe
