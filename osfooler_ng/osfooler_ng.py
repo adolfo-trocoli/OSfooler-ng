@@ -820,7 +820,7 @@ def print_udp_packet(pl):
 # Process nmap packets
 def cb_nmap(pl): 
     pkt = ip.IP(pl.get_payload())
-    pkt_scapy = Ether(pl.get_payload())   
+    pkt_scapy = IP(pl.get_payload())   
 
     #dbg
     mostrar(pkt_scapy, "cb_nmap")
