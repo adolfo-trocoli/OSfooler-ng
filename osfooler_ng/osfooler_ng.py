@@ -127,7 +127,7 @@ global host_discovery_config
 
 def mark_as_seen(pkt_type, ip_src, detail=None):
   now = time.time()
-  timeout = host_discovery_config.get("timeout", 1.0)
+  timeout = host_discovery_config.get("timeout", 1.5)
   expiry = now + timeout
 
   if ip_src not in host_discovery_tracker:
@@ -135,8 +135,6 @@ def mark_as_seen(pkt_type, ip_src, detail=None):
           "icmp": {},
           "syn_ports": {},
           "ack_ports": {},
-          "arp": set(),
-          "arp_expiry": {}
       }
   entry = host_discovery_tracker[ip_src]
   if pkt_type == "icmp":
@@ -145,9 +143,7 @@ def mark_as_seen(pkt_type, ip_src, detail=None):
       entry["syn_ports"][detail] = expiry
   elif pkt_type == "ack":
       entry["ack_ports"][detail] = expiry
-  elif pkt_type == "arp":
-      entry["arp"].add(ip_src)
-      entry["arp_expiry"][ip_src] = expiry
+
 
 
 
@@ -162,8 +158,6 @@ def previously_seen(pkt_type, ip_src, detail=None):
       return detail in entry["syn_ports"]
   elif pkt_type == "ack":
       return detail in entry["ack_ports"]
-  elif pkt_type == "arp":
-      return ip_src in entry["arp"]
   return False
 
 def in_discard_window(pkt_type, ip_src, detail=None):
@@ -179,23 +173,29 @@ def in_discard_window(pkt_type, ip_src, detail=None):
         expiry = entry["syn_ports"].get(detail)
     elif pkt_type == "ack":
         expiry = entry["ack_ports"].get(detail)
-    elif pkt_type == "arp":
-        expiry = entry["arp_expiry"].get(ip_src)
     else:
         return False
 
     return expiry is not None and now < expiry
 
 def parse_z_argument(z_value):
+  
+  if z_value.strip().lower() == 'default':
+    return {
+        "icmp_types": [8, 13],     
+        "syn_ports": [80,443],         
+        "ack_ports": [80],
+        "timeout": 1.5            
+    }
+
   config = {
       "icmp_types": [],
       "syn_ports": [],
       "ack_ports": [],
-      "arp_enabled": False,
-      "timeout": 1.0
+      "timeout": 1.5
   }
 
-  entries = z_value.split(',')
+  entries = z_value.split(';')
   for entry in entries:
     entry = entry.strip().upper()
     if entry == 'PE':
@@ -204,8 +204,6 @@ def parse_z_argument(z_value):
       config["icmp_types"].append(13)
     elif entry == 'PM':
       config["icmp_types"].append(17)
-    elif entry == 'PR':
-      config["arp_enabled"] = True
     elif entry.startswith('PS'):
       try:
         ports = entry[2:].split(',')
@@ -234,8 +232,7 @@ def is_host_discovery_packet(pkt, config=None):
         "icmp_types": [8, 13],
         "syn_ports": [443],
         "ack_ports": [80],
-        "arp_enabled": True,
-        "timeout": 1.0
+        "timeout": 1.5
     }
     config = config or default_config
 
@@ -274,18 +271,6 @@ def is_host_discovery_packet(pkt, config=None):
                 else:
                     mark_as_seen("ack", ip_src, tcp.dport)
                     return True
-
-    if ARP in pkt and config["arp_enabled"] and pkt[ARP].op == 1:
-        ip_src = pkt[ARP].psrc
-        if previously_seen("arp", ip_src):
-            if in_discard_window("arp", ip_src):
-                return True
-            else:
-                return False
-        else:
-            mark_as_seen("arp", ip_src)
-            return True
-
     return False
 
 # ehe
