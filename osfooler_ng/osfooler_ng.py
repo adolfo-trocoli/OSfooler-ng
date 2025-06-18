@@ -127,28 +127,35 @@ global host_discovery_config
 
 def mark_as_seen(pkt_type, ip_src, detail=None):
   now = time.time()
+  timeout = host_discovery_config.get("timeout", 1.0)
+  expiry = now + timeout
+
   if ip_src not in host_discovery_tracker:
       host_discovery_tracker[ip_src] = {
-          "timestamp": now,
-          "icmp": set(),
-          "syn_ports": set(),
-          "ack_ports": set(),
-          "arp": False,
+          "icmp": {},
+          "syn_ports": {},
+          "ack_ports": {},
+          "arp": set(),
+          "arp_expiry": {}
       }
   entry = host_discovery_tracker[ip_src]
   if pkt_type == "icmp":
-      entry["icmp"].add(detail)
+      entry["icmp"][detail] = expiry
   elif pkt_type == "syn":
-      entry["syn_ports"].add(detail)
+      entry["syn_ports"][detail] = expiry
   elif pkt_type == "ack":
-      entry["ack_ports"].add(detail)
+      entry["ack_ports"][detail] = expiry
   elif pkt_type == "arp":
-      entry["arp"] = True
+      entry["arp"].add(ip_src)
+      entry["arp_expiry"][ip_src] = expiry
+
+
 
 def previously_seen(pkt_type, ip_src, detail=None):
   entry = host_discovery_tracker.get(ip_src)
   if not entry:
       return False
+
   if pkt_type == "icmp":
       return detail in entry["icmp"]
   elif pkt_type == "syn":
@@ -156,15 +163,36 @@ def previously_seen(pkt_type, ip_src, detail=None):
   elif pkt_type == "ack":
       return detail in entry["ack_ports"]
   elif pkt_type == "arp":
-      return entry["arp"]
+      return ip_src in entry["arp"]
   return False
+
+def in_discard_window(pkt_type, ip_src, detail=None):
+    entry = host_discovery_tracker.get(ip_src)
+    if not entry:
+        return False
+
+    now = time.time()
+
+    if pkt_type == "icmp":
+        expiry = entry["icmp"].get(detail)
+    elif pkt_type == "syn":
+        expiry = entry["syn_ports"].get(detail)
+    elif pkt_type == "ack":
+        expiry = entry["ack_ports"].get(detail)
+    elif pkt_type == "arp":
+        expiry = entry["arp_expiry"].get(ip_src)
+    else:
+        return False
+
+    return expiry is not None and now < expiry
 
 def parse_z_argument(z_value):
   config = {
       "icmp_types": [],
       "syn_ports": [],
       "ack_ports": [],
-      "arp_enabled": False
+      "arp_enabled": False,
+      "timeout": 1.0
   }
 
   entries = z_value.split(',')
@@ -190,63 +218,75 @@ def parse_z_argument(z_value):
         config["ack_ports"].extend([int(p) for p in ports if p])
       except ValueError:
         print("Error in PA value")
+    elif entry.startswith('T'):
+      try:
+        config["timeout"] = float(entry[1:])
+      except ValueError:
+        print("Error in T value")
   return config
 
 def is_host_discovery_packet(pkt, config=None):
-  """
+    """
     Detecta si un paquete es parte de un escaneo de descubrimiento de hosts de Nmap.
+    Devuelve True si debe descartarse.
+    """
+    default_config = {
+        "icmp_types": [8, 13],
+        "syn_ports": [443],
+        "ack_ports": [80],
+        "arp_enabled": True,
+        "timeout": 1.0
+    }
+    config = config or default_config
 
-    :param pkt: Paquete de Scapy.
-    :param config: Diccionario con:
-        - icmp_types: lista de tipos ICMP (e.g. [8, 13])
-        - syn_ports: lista de puertos destino con flag SYN (e.g. [443])
-        - ack_ports: lista de puertos destino con flag ACK (e.g. [80])
-        - arp_enabled: bool (True para detectar ARP who-has)
-    :return: True si el paquete es de host discovery, False si no.
-  """
+    if IP in pkt:
+        ip_src = pkt[IP].src
 
-  #dbg
-  mostrar(pkt, "is_host_discovery_packet")
+        if ICMP in pkt and pkt[ICMP].type in config["icmp_types"]:
+            if previously_seen("icmp", ip_src, pkt[ICMP].type):
+                if in_discard_window("icmp", ip_src, pkt[ICMP].type):
+                    return True
+                else:
+                    return False
+            else:
+                mark_as_seen("icmp", ip_src, pkt[ICMP].type)
+                return True
 
-  # Config por defecto si no se especifica
-  default_config = {
-      "icmp_types": [8, 13],     # PE, PP
-      "syn_ports": [443],        # PS443
-      "ack_ports": [80],         # PA80
-      "arp_enabled": True        # PR
-  }
-  config = config or default_config
+        if TCP in pkt:
+            tcp = pkt[TCP]
 
-  if IP in pkt:
-      ip_src = pkt[IP].src
-      if ICMP in pkt and pkt[ICMP].type in config["icmp_types"]:
-          #dbg
-          mostrar(pkt, "ICMP")
-          if not previously_seen("icmp", ip_src, pkt[ICMP].type):
-              mark_as_seen("icmp", ip_src, pkt[ICMP].type)
-              return True
-      if TCP in pkt:
-          tcp = pkt[TCP]
-          if tcp.flags == 0x02 and tcp.dport in config["syn_ports"]:  # SYN
-              #dbg
-              mostrar(pkt, "TCPSYN")
-              if not previously_seen("syn", ip_src, tcp.dport):
-                  mark_as_seen("syn", ip_src, tcp.dport)
-                  return True
-          if tcp.flags == 0x10 and tcp.dport in config["ack_ports"]:  # ACK
-              #dbg
-              mostrar(pkt, "TCPACK")
-              if not previously_seen("ack", ip_src, tcp.dport):
-                  mark_as_seen("ack", ip_src, tcp.dport)
-                  return True
-  if ARP in pkt and config["arp_enabled"] and pkt[ARP].op == 1:
-      ip_src = pkt[ARP].psrc
-      #dbg
-      mostrar(pkt, "ARP")
-      if not previously_seen("arp", ip_src):
-          mark_as_seen("arp", ip_src)
-          return True
-  return False
+            if tcp.flags == 0x02 and tcp.dport in config["syn_ports"]:
+                if previously_seen("syn", ip_src, tcp.dport):
+                    if in_discard_window("syn", ip_src, tcp.dport):
+                        return True
+                    else:
+                        return False
+                else:
+                    mark_as_seen("syn", ip_src, tcp.dport)
+                    return True
+
+            if tcp.flags == 0x10 and tcp.dport in config["ack_ports"]:
+                if previously_seen("ack", ip_src, tcp.dport):
+                    if in_discard_window("ack", ip_src, tcp.dport):
+                        return True
+                    else:
+                        return False
+                else:
+                    mark_as_seen("ack", ip_src, tcp.dport)
+                    return True
+
+    if ARP in pkt and config["arp_enabled"] and pkt[ARP].op == 1:
+        ip_src = pkt[ARP].psrc
+        if previously_seen("arp", ip_src):
+            if in_discard_window("arp", ip_src):
+                return True
+            else:
+                return False
+        else:
+            mark_as_seen("arp", ip_src)
+            return True
+
+    return False
 
 # ehe
 
