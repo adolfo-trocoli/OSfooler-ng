@@ -21,11 +21,9 @@ import time
 import os
 import binascii
 import netfilterqueue as nfqueue
-#from netfilterqueue import NetfilterQueue
 import configparser
 
-#dscf
-#import ast
+
 l = logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import *
 from dpkt import *
@@ -38,11 +36,6 @@ from multiprocessing import Process
 sys.tracebacklimit = 0
 conf.verbose = 0
 conf.L3socket = L3RawSocket
-
-#dscf
-#sys.path.append('python')
-#sys.path.append('build/python')
-#sys.path.append('dpkt-1.6')
 
 # Initialize statistic variables
 icmp_packet = 0
@@ -285,7 +278,7 @@ def is_host_discovery_packet(pkt, config=None):
                 else:
                     mark_as_seen("ack", ip_src, tcp.dport)
                     return True
-                    
+
         if UDP in pkt and pkt[UDP].dport in config["udp_ports"]:
           if previously_seen("udp", ip_src, pkt[UDP].dport):
               if in_discard_window("udp", ip_src, pkt[UDP].dport):
@@ -736,17 +729,6 @@ def search_os(search_string):
     print(" [+] Searching databases for: '%s'" % search_string)
     for x in range(len(nmap_values)):
       print("      [nmap] \"%s\"" % nmap_values[x])
-    #
-    # Search p0f database
-    # dscf
-    # db = module_p0f.p0f_kdb.get_base()
-    # p0f_values = []
-    # for i in range(0, len(db)):
-    #   if (re.search(search_string, db[i][6], re.IGNORECASE) or re.search(search_string, db[i][7], re.IGNORECASE)) :
-    #     p0f_values.append("OS: \"" + db[i][6] + "\" DETAILS: \"" + db[i][7] + "\"")
-    # # Print results
-    # for x in range(len(p0f_values)):
-    #   print("      [p0f] %s" % p0f_values[x])
     exit(0)
 
 def options_to_scapy(x):
@@ -815,57 +797,6 @@ def print_udp_packet(pl):
         print("                     %s" % (pkt.udp.data[150:199]))
         print("                     %s" % (pkt.udp.data[200:249]))
         print("                     %s" % (pkt.udp.data[250:299]))
-
-# Process p0f packets
-# dscf
-# def cb_p0f( pl ): 
-
-#     pkt = ip.IP(pl.get_payload())
-    
-#     # that condition is too complex, I had to drop SourceIP check, so it will work with PolicyBasedRouting.
-#     #
-#     # During PolicyBasedRouting, when we afterwards route the packets via
-#     # .. another interface, its SRC_IP remains always of main interface, as TCP stack sees it.
-
-#     #if (inet_ntoa(pkt.src) == home_ip) and (pkt.p == ip.IP_PROTO_TCP) and (tcp_flags(pkt.tcp.flags) == "S"):
-#     if (pkt.p == ip.IP_PROTO_TCP) and (tcp_flags(pkt.tcp.flags) == "S"): 
-#         options = binascii.hexlify(pkt.tcp.opts).decode('utf-8')
-#         op = options.find("080a")
-#         if (op != -1):
-#             op = op + 7
-#             timestamp = options[op:][:5]
-#             i = int(timestamp, 16)
-#         if opts.osgenre and opts.details_p0f:
-#             try:
-#                 pkt_send = module_p0f.p0f_impersonate(old_div(IP(dst=inet_ntoa(pkt.dst), src=inet_ntoa(pkt.src), id=pkt.id, tos=pkt.tos), TCP(
-#                     sport=pkt.tcp.sport, dport=pkt.tcp.dport, flags='S', seq=pkt.tcp.seq, ack=0)), i, osgenre=opts.osgenre, osdetails=opts.details_p0f)
-#                 if opts.verbose:
-#                     print_tcp_packet(pl, "p0f")
-#                 pl.set_payload(bytes(pkt_send))
-#                 pl.accept()  
-#             except Exception as e:
-#                 print(" [+] Unable to modify packet with p0f personality...")
-#                 print(" [+] Aborting")
-#                 sys.exit()
-#         elif opts.osgenre and not opts.details_p0f:
-#             try:
-#                 pkt_send = module_p0f.p0f_impersonate(old_div(IP(dst=inet_ntoa(pkt.dst), src=inet_ntoa(pkt.src)), TCP(
-#                     sport=pkt.tcp.sport, dport=pkt.tcp.dport, flags='S', seq=pkt.tcp.seq)), i, osgenre=opts.osgenre)
-#                 if opts.verbose:
-#                   print_tcp_packet(pl, "p0f") 
-#                 pl.set_payload(bytes(pkt_send))
-#                 pl.accept() 
-#             except Exception as e:
-#                 print(" [+] Unable to modify packet with p0f personality...")
-#                 print(" [+] Aborting")
-#                 sys.exit()
-#         else:
-#             pl.accept()
-#     else:
-#         pl.accept()
-#         if opts.verbose:
-#             print(" [+] Ignored packet:   source %s destination %s tos %s id %s" % (inet_ntoa(pkt.src), inet_ntoa(pkt.dst), pkt.tos, pkt.id))
-      #  return 0
 
 # Process nmap packets
 def cb_nmap(pl): 
@@ -1075,13 +1006,6 @@ def main():
                     dest='nmap', help="list available nmap signatures")
   parser.add_option('-m', '--os_nmap', action='store',
                     dest='os', help="use nmap Operating System")
-  #dscf
-  #parser.add_option('-p', '--p0f', action='store_true',
-  #                  dest='p0f', help="list available p0f v2 signatures")
-  #parser.add_option('-o', '--os_p0f', action='store',
-  #                  dest='osgenre', help="use p0f v2 OS Genre")
-  #parser.add_option('-d', '--details_p0f',
-  #                  action='store', dest='details_p0f', help="choose p0f v2 Details")
   parser.add_option('-i', '--interface', action='store',
                     dest='interface', help="choose network interface (eth0)")
   parser.add_option('-s', '--search', action='store',
@@ -1120,28 +1044,16 @@ def main():
     list_os()
     exit(0)
 
-  #dscf
-  #if opts.p0f:
-  #  print("Please, select p0f OS Genre and Details")
-  #  db = module_p0f.p0f_kdb.get_base()
-  #  for i in range(0, len(db)):
-  #    print("\tOS Genre=\"%s\" Details=\"%s\"" % (db[i][6], db[i][7]))
-  #  exit(0)
+  
 
-  #dscf
+
   # bhe ehe (solo el "and not opts.z_config")
-  if not opts.os and not opts.z_config: # and (not (opts.details_p0f and not opts.osgenre)) and (not opts.osgenre):
+  if not opts.os and not opts.z_config: 
     print(" [ERROR] Please, choose an OS system to emulate or activate host detection evasion.")
     print(" [+] Use %s -h to get more information" % sys.argv[0])
     print()
     sys.exit(' [+] Aborting...')
 
-  #dscf
-  #if (opts.details_p0f and not opts.osgenre):
-  #  print(" [ERROR] Please, choose p0f OS system to emulate, not only OS details")
-  #  print(" [+] Use %s -p to list possible candidates" % sys.argv[0])
-  #  print()
-  #  sys.exit(' [+] Aborting...')
 
   # Check if user is root before continue
   user_is_root()
@@ -1181,34 +1093,7 @@ def main():
       print("      [->] \"%s\" could not be found in nmap database..." % opts.os)
       sys.exit(' [+] Aborting...')
 
-  #dscf
-  #if (opts.osgenre):
-  #  print(" [+] Mutating to p0f:")
-  #  db = module_p0f.p0f_kdb.get_base()
-  #  exists = 0
-  #  db_size = len(db)
-  #  if (opts.osgenre == "random"):
-  #    rand_os = randint(0,db_size)
-  #    opts.osgenre = db[rand_os][6]
-  #  if (not opts.details_p0f):
-  #    for i in range(0, db_size):
-  #      if (db[i][6] == opts.osgenre):
-  #        print("      WWW:%s|TTL:%s|D:%s|SS:%s|OOO:%s|QQ:%s|OS:%s|DETAILS:%s" % (db[i][0],db[i][1],db[i][2],db[i][3],db[i][4],db[i][5],db[i][6],db[i][7]))
-  #        exists = 1
-  #  if (opts.details_p0f):
-  #    for i in range(0, db_size):
-  #      if (db[i][6] == opts.osgenre and db[i][7] == opts.details_p0f):
-  #        print("      WWW:%s|TTL:%s|D:%s|SS:%s|OOO:%s|QQ:%s|OS:%s|DETAILS:%s" % (db[i][0],db[i][1],db[i][2],db[i][3],db[i][4],db[i][5],db[i][6],db[i][7]))
-  #        exists = 1
-  #        break
-  #  if (not exists):
-  #    print("      [->] Could not found that combination in p0f database...")
-  #    sys.exit(' [+] Aborting...')
-
-  #dscf
-  #if (not opts.details_p0f and opts.osgenre):
-  #    print(" [i] You've only selected p0f OS genre. Details will be chosen randomly every packet from the list bellow")
-  
+ 
   # Start activity
   print(" [+] Activating queues")
   procs = []
@@ -1219,18 +1104,7 @@ def main():
     proc = Process(target=init,args=(q_num0,))
     procs.append(proc)
     proc.start() 
-  # p0f mode
-  #dscf
-  #if (opts.osgenre):
-  #  global home_ip
-  #  home_ip = get_ip_address(interface)
-  #  print (" [+] detected home_ip %s" % home_ip)
-  #  print (" [+] detected Queue %s" % q_num1)
-  #  os.system("nice -n -20 iptables -A OUTPUT -t mangle -p TCP --syn -j NFQUEUE --queue-num %s" % q_num1)
-  #  proc = Process(target=init,args=(q_num1,))
-  #  procs.append(proc)
-  #  proc.start() 
-  # Detect mode
+ 
 
   try:
       for proc in procs:
