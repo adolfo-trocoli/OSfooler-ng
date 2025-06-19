@@ -135,6 +135,7 @@ def mark_as_seen(pkt_type, ip_src, detail=None):
           "icmp": {},
           "syn_ports": {},
           "ack_ports": {},
+          "udp_ports": {},
       }
   entry = host_discovery_tracker[ip_src]
   if pkt_type == "icmp":
@@ -143,6 +144,8 @@ def mark_as_seen(pkt_type, ip_src, detail=None):
       entry["syn_ports"][detail] = expiry
   elif pkt_type == "ack":
       entry["ack_ports"][detail] = expiry
+  elif pkt_type == "udp":
+      entry["udp_ports"][detail] = expiry
 
 
 
@@ -158,6 +161,8 @@ def previously_seen(pkt_type, ip_src, detail=None):
       return detail in entry["syn_ports"]
   elif pkt_type == "ack":
       return detail in entry["ack_ports"]
+  elif pkt_type == "udp":
+      return detail in entry["udp_ports"]
   return False
 
 def in_discard_window(pkt_type, ip_src, detail=None):
@@ -173,6 +178,8 @@ def in_discard_window(pkt_type, ip_src, detail=None):
         expiry = entry["syn_ports"].get(detail)
     elif pkt_type == "ack":
         expiry = entry["ack_ports"].get(detail)
+    elif pkt_type == "udp":
+        expiry = entry["udp_ports"].get(detail)
     else:
         return False
 
@@ -221,6 +228,12 @@ def parse_z_argument(z_value):
         config["timeout"] = float(entry[1:])
       except ValueError:
         print("Error in T value")
+    elif entry.startswith('PU'):
+      try:
+        ports = entry[2:].split(',')
+        config.setdefault("udp_ports", []).extend([int(p) for p in ports if p])
+      except ValueError:
+        print("Error in PU value")
   return config
 
 def is_host_discovery_packet(pkt, config=None):
@@ -232,6 +245,7 @@ def is_host_discovery_packet(pkt, config=None):
         "icmp_types": [8, 13],
         "syn_ports": [443],
         "ack_ports": [80],
+        "udp_ports": [],
         "timeout": 1.5
     }
     config = config or default_config
@@ -271,6 +285,17 @@ def is_host_discovery_packet(pkt, config=None):
                 else:
                     mark_as_seen("ack", ip_src, tcp.dport)
                     return True
+                    
+        if UDP in pkt and pkt[UDP].dport in config["udp_ports"]:
+          if previously_seen("udp", ip_src, pkt[UDP].dport):
+              if in_discard_window("udp", ip_src, pkt[UDP].dport):
+                  return True
+              else:
+                  return False
+          else:
+              mark_as_seen("udp", ip_src, pkt[UDP].dport)
+              return True
+
     return False
 
 # ehe
