@@ -129,6 +129,7 @@ def mark_as_seen(pkt_type, ip_src, detail=None):
           "syn_ports": {},
           "ack_ports": {},
           "udp_ports": {},
+          "ip_proto": {},
       }
   entry = host_discovery_tracker[ip_src]
   if pkt_type == "icmp":
@@ -139,6 +140,8 @@ def mark_as_seen(pkt_type, ip_src, detail=None):
       entry["ack_ports"][detail] = expiry
   elif pkt_type == "udp":
       entry["udp_ports"][detail] = expiry
+  elif pkt_type == "ip":
+      entry["ip_proto"][detail] = expiry
 
 
 
@@ -156,6 +159,9 @@ def previously_seen(pkt_type, ip_src, detail=None):
       return detail in entry["ack_ports"]
   elif pkt_type == "udp":
       return detail in entry["udp_ports"]
+  elif pkt_type == "ip":
+      return detail in entry["ip_proto"]
+
   return False
 
 def in_discard_window(pkt_type, ip_src, detail=None):
@@ -173,6 +179,8 @@ def in_discard_window(pkt_type, ip_src, detail=None):
         expiry = entry["ack_ports"].get(detail)
     elif pkt_type == "udp":
         expiry = entry["udp_ports"].get(detail)
+    elif pkt_type == "ip":
+      expiry = entry["ip_proto"].get(detail)
     else:
         return False
 
@@ -192,6 +200,8 @@ def parse_z_argument(z_value):
       "icmp_types": [],
       "syn_ports": [],
       "ack_ports": [],
+      "udp_ports": [],
+      "ip_protos": [],
       "timeout": 1.5
   }
 
@@ -227,6 +237,12 @@ def parse_z_argument(z_value):
         config.setdefault("udp_ports", []).extend([int(p) for p in ports if p])
       except ValueError:
         print("Error in PU value")
+    elif entry.startswith('PO'):
+      try:
+        protos = entry[2:].split(',')
+        config.setdefault("ip_protos", []).extend([int(p) for p in protos if p])
+      except ValueError:
+        print("Error in PO value")
   return config
 
 def is_host_discovery_packet(pkt, config=None):
@@ -246,6 +262,7 @@ def is_host_discovery_packet(pkt, config=None):
     if IP in pkt:
         ip_src = pkt[IP].src
 
+        # escaneo ICMP (PE, PP, PM)
         if ICMP in pkt and pkt[ICMP].type in config["icmp_types"]:
             if previously_seen("icmp", ip_src, pkt[ICMP].type):
                 if in_discard_window("icmp", ip_src, pkt[ICMP].type):
@@ -256,6 +273,7 @@ def is_host_discovery_packet(pkt, config=None):
                 mark_as_seen("icmp", ip_src, pkt[ICMP].type)
                 return True
 
+        # escaneo TCP (PS, PA)
         if TCP in pkt:
             tcp = pkt[TCP]
 
@@ -279,6 +297,7 @@ def is_host_discovery_packet(pkt, config=None):
                     mark_as_seen("ack", ip_src, tcp.dport)
                     return True
 
+        # escaneo UDP (PU)
         if UDP in pkt and pkt[UDP].dport in config["udp_ports"]:
           if previously_seen("udp", ip_src, pkt[UDP].dport):
               if in_discard_window("udp", ip_src, pkt[UDP].dport):
@@ -287,6 +306,17 @@ def is_host_discovery_packet(pkt, config=None):
                   return False
           else:
               mark_as_seen("udp", ip_src, pkt[UDP].dport)
+              return True
+
+        # escaneo IP (PO)
+        if pkt.haslayer(Raw) is False and pkt[IP].proto in config.get("ip_protos", []):
+          if previously_seen("ip", ip_src, pkt[IP].proto):
+              if in_discard_window("ip", ip_src, pkt[IP].proto):
+                  return True
+              else:
+                  return False
+          else:
+              mark_as_seen("ip", ip_src, pkt[IP].proto)
               return True
 
     return False
