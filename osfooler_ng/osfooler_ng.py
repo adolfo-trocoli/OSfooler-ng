@@ -229,6 +229,7 @@ def parse_z_argument(z_value):
     elif entry.startswith('T'):
       try:
         config["timeout"] = float(entry[1:])
+        print(config["timeout"], entry[1:])
       except ValueError:
         print("Error in T value")
     elif entry.startswith('PU'):
