@@ -836,8 +836,7 @@ def cb_nmap(pl):
     #dbg
     print(" [DEBUG] Config IP protos:", host_discovery_config.get("ip_protos", []))
     mostrar(pkt_scapy, "cb_nmap")
-    print(f"[DEBUG] PO check: proto={pkt[IP].proto}, ip_protos={config.get('ip_protos', [])}")
-    
+
     # bhe
     if opts.z_config and is_host_discovery_packet(pkt_scapy, config=host_discovery_config):
         print(" [+] Host discovery packet detected from", pkt_scapy[IP].src)
