@@ -243,6 +243,8 @@ def parse_z_argument(z_value):
         config.setdefault("ip_protos", []).extend([int(p) for p in protos if p])
       except ValueError:
         print("Error in PO value")
+
+  print (f"Prueba: {config}")
   return config
 
 def is_host_discovery_packet(pkt, config=None):
