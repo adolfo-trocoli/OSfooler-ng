@@ -205,7 +205,7 @@ def parse_z_argument(z_value):
       "timeout": 1.5
   }
 
-  entries = z_value.split(';')
+  entries = z_value.split(':')
   for entry in entries:
     entry = entry.strip().upper()
     if entry == 'PE':
