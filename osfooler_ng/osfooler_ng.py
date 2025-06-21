@@ -834,7 +834,7 @@ def cb_nmap(pl):
     pkt_scapy = IP(pl.get_payload())   
 
     #dbg
-    print(" [DEBUG] Config IP protos:", host_discovery_config.get("ip_protos", []))
+    print(f" [DEBUG] Config: {host_discovery_config}")
     mostrar(pkt_scapy, "cb_nmap")
 
     # bhe
