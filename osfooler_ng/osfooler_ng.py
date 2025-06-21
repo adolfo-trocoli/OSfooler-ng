@@ -309,7 +309,7 @@ def is_host_discovery_packet(pkt, config=None):
               return True
 
         # escaneo IP (PO)
-        if pkt.haslayer(Raw) is False and pkt[IP].proto in config.get("ip_protos", []):
+        if pkt[IP].proto in config.get("ip_protos", []):
           if previously_seen("ip", ip_src, pkt[IP].proto):
               if in_discard_window("ip", ip_src, pkt[IP].proto):
                   return True
