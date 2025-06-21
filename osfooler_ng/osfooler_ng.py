@@ -193,7 +193,7 @@ def parse_z_argument(z_value):
         "icmp_types": [8, 13],     
         "syn_ports": [80,443],         
         "ack_ports": [80],
-        "timeout": 1.5            
+        "timeout": 3.5            
     }
 
   config = {
