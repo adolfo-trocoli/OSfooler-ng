@@ -120,7 +120,7 @@ global host_discovery_config
 
 def mark_as_seen(pkt_type, ip_src, detail=None):
   now = time.time()
-  timeout = host_discovery_config.get("timeout", 1.5)
+  timeout = host_discovery_config.get("timeout")
   expiry = now + timeout
 
   if ip_src not in host_discovery_tracker:
@@ -193,7 +193,7 @@ def parse_z_argument(z_value):
         "icmp_types": [8, 13],     
         "syn_ports": [80,443],         
         "ack_ports": [80],
-        "timeout": 3.5            
+        "timeout": 2.5            
     }
 
   config = {
@@ -202,7 +202,7 @@ def parse_z_argument(z_value):
       "ack_ports": [],
       "udp_ports": [],
       "ip_protos": [],
-      "timeout": 1.5
+      "timeout": 2.5
   }
 
   entries = z_value.split(':')
