@@ -224,6 +224,7 @@ def in_discard_window(pkt_type, ip_src, detail=None):
           count = entry["ip_count"].get(detail, 0)
       else:
           return False
+      print(f"[DEBUG] COUNT:{count}, THRES:{count_threshold}")
       return count <= count_threshold
 
 def parse_z_argument(z_value):
@@ -292,7 +293,7 @@ def parse_z_argument(z_value):
     else:
       print(f"Unknown parameter: {entry}")
 
-  print (f"Prueba: {config}")
+  print (f"[DEBUG] Valor configuración: {config}")
   return config
 
 def is_host_discovery_packet(pkt, config=None):
