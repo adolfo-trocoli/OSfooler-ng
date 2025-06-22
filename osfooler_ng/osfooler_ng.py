@@ -336,6 +336,7 @@ def is_host_discovery_packet(pkt, config=None):
 
             if tcp.flags == 0x10 and tcp.dport in config["ack_ports"]:
                 if previously_seen("ack", ip_src, tcp.dport):
+                    increment_count("ack", ip_src, tcp.dport)
                     return in_discard_window("ack", ip_src, tcp.dport)
                 else:
                     mark_as_seen("ack", ip_src, tcp.dport)
