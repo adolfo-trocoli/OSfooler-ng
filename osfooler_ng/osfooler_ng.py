@@ -268,7 +268,7 @@ def is_host_discovery_packet(pkt, config=None):
         # escaneo ICMP (PE, PP, PM)
         if ICMP in pkt and pkt[ICMP].type in config["icmp_types"]:
             if previously_seen("icmp", ip_src, pkt[ICMP].type):
-                return in_discard_window("icmp", ip_src, pkt[ICMP].type):
+                return in_discard_window("icmp", ip_src, pkt[ICMP].type)
             else:
                 mark_as_seen("icmp", ip_src, pkt[ICMP].type)
                 return True
