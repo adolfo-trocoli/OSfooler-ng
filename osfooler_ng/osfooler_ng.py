@@ -191,40 +191,40 @@ def previously_seen(pkt_type, ip_src, detail=None):
 
 def in_discard_window(pkt_type, ip_src, detail=None):
   entry = host_discovery_tracker.get(ip_src)
-    if not entry:
-        return False
+  if not entry:
+      return False
 
-    if host_discovery_config.get("timeout") is not None: # Timeout-based
-        now = time.time()
-        if pkt_type == "icmp":
-            expiry = entry["icmp"].get(detail)
-        elif pkt_type == "syn":
-            expiry = entry["syn_ports"].get(detail)
-        elif pkt_type == "ack":
-            expiry = entry["ack_ports"].get(detail)
-        elif pkt_type == "udp":
-            expiry = entry["udp_ports"].get(detail)
-        elif pkt_type == "ip":
-            expiry = entry["ip_proto"].get(detail)
-        else:
-            return False
-        return expiry is not None and now < expiry
+  if host_discovery_config.get("timeout") is not None: # Timeout-based
+      now = time.time()
+      if pkt_type == "icmp":
+          expiry = entry["icmp"].get(detail)
+      elif pkt_type == "syn":
+          expiry = entry["syn_ports"].get(detail)
+      elif pkt_type == "ack":
+          expiry = entry["ack_ports"].get(detail)
+      elif pkt_type == "udp":
+          expiry = entry["udp_ports"].get(detail)
+      elif pkt_type == "ip":
+          expiry = entry["ip_proto"].get(detail)
+      else:
+          return False
+      return expiry is not None and now < expiry
 
-    else:  # Count-based
-        count_threshold = host_discovery_config.get("count", 2)
-        if pkt_type == "icmp":
-            count = entry["icmp_count"].get(detail, 0)
-        elif pkt_type == "syn":
-            count = entry["syn_count"].get(detail, 0)
-        elif pkt_type == "ack":
-            count = entry["ack_count"].get(detail, 0)
-        elif pkt_type == "udp":
-            count = entry["udp_count"].get(detail, 0)
-        elif pkt_type == "ip":
-            count = entry["ip_count"].get(detail, 0)
-        else:
-            return False
-        return count <= count_threshold
+  else:  # Count-based
+      count_threshold = host_discovery_config.get("count", 2)
+      if pkt_type == "icmp":
+          count = entry["icmp_count"].get(detail, 0)
+      elif pkt_type == "syn":
+          count = entry["syn_count"].get(detail, 0)
+      elif pkt_type == "ack":
+          count = entry["ack_count"].get(detail, 0)
+      elif pkt_type == "udp":
+          count = entry["udp_count"].get(detail, 0)
+      elif pkt_type == "ip":
+          count = entry["ip_count"].get(detail, 0)
+      else:
+          return False
+      return count <= count_threshold
 
 def parse_z_argument(z_value):
   if z_value.strip().lower() == 'default':
