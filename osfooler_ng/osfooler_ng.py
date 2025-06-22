@@ -279,14 +279,14 @@ def is_host_discovery_packet(pkt, config=None):
 
             if tcp.flags == 0x02 and tcp.dport in config["syn_ports"]:
                 if previously_seen("syn", ip_src, tcp.dport):
-                    return in_discard_window("syn", ip_src, tcp.dport):
+                    return in_discard_window("syn", ip_src, tcp.dport)
                 else:
                     mark_as_seen("syn", ip_src, tcp.dport)
                     return True
 
             if tcp.flags == 0x10 and tcp.dport in config["ack_ports"]:
                 if previously_seen("ack", ip_src, tcp.dport):
-                    return in_discard_window("ack", ip_src, tcp.dport):
+                    return in_discard_window("ack", ip_src, tcp.dport)
                 else:
                     mark_as_seen("ack", ip_src, tcp.dport)
                     return True
@@ -294,7 +294,7 @@ def is_host_discovery_packet(pkt, config=None):
         # escaneo UDP (PU)
         if UDP in pkt and pkt[UDP].dport in config["udp_ports"]:
           if previously_seen("udp", ip_src, pkt[UDP].dport):
-              return in_discard_window("udp", ip_src, pkt[UDP].dport):
+              return in_discard_window("udp", ip_src, pkt[UDP].dport)
           else:
               mark_as_seen("udp", ip_src, pkt[UDP].dport)
               return True
@@ -302,7 +302,7 @@ def is_host_discovery_packet(pkt, config=None):
         # escaneo IP (PO)
         if pkt[IP].proto in config.get("ip_protos", []):
           if previously_seen("ip", ip_src, pkt[IP].proto):
-              return in_discard_window("ip", ip_src, pkt[IP].proto):
+              return in_discard_window("ip", ip_src, pkt[IP].proto)
           else:
               mark_as_seen("ip", ip_src, pkt[IP].proto)
               return True
