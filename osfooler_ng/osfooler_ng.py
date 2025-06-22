@@ -232,7 +232,7 @@ def parse_z_argument(z_value):
         "icmp_types": [8, 13],     
         "syn_ports": [80,443],         
         "ack_ports": [80],
-        "count" : 2            
+        "count" : 2,            
     }
 
   config = {
@@ -241,7 +241,7 @@ def parse_z_argument(z_value):
       "ack_ports": [],
       "udp_ports": [],
       "ip_protos": [],
-      "count": 2 
+      "count": 2, 
       "timeout": None
   }
 
@@ -305,7 +305,7 @@ def is_host_discovery_packet(pkt, config=None):
         "syn_ports": [443],
         "ack_ports": [80],
         "udp_ports": [],
-        "count": 2
+        "count": 2,
     }
     config = config or default_config
 
