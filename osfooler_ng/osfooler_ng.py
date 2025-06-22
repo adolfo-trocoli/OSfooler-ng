@@ -119,9 +119,9 @@ host_discovery_tracker = {}
 global host_discovery_config
 
 def mark_as_seen(pkt_type, ip_src, detail=None):
-  now = time.time()
-  timeout = host_discovery_config.get("timeout")
-  expiry = now + timeout
+  expiry = None
+  if host_discovery_config.get("timeout") is not None:
+      expiry = time.time() + host_discovery_config["timeout"]
 
   if ip_src not in host_discovery_tracker:
       host_discovery_tracker[ip_src] = {
@@ -130,20 +130,45 @@ def mark_as_seen(pkt_type, ip_src, detail=None):
           "ack_ports": {},
           "udp_ports": {},
           "ip_proto": {},
+          "icmp_count": {},
+          "syn_count": {},
+          "ack_count": {},
+          "udp_count": {},
+          "ip_count": {}
       }
+
   entry = host_discovery_tracker[ip_src]
   if pkt_type == "icmp":
       entry["icmp"][detail] = expiry
+      entry["icmp_count"][detail] = 1
   elif pkt_type == "syn":
       entry["syn_ports"][detail] = expiry
+      entry["syn_count"][detail] = 1
   elif pkt_type == "ack":
       entry["ack_ports"][detail] = expiry
+      entry["ack_count"][detail] = 1
   elif pkt_type == "udp":
       entry["udp_ports"][detail] = expiry
+      entry["udp_count"][detail] = 1
   elif pkt_type == "ip":
       entry["ip_proto"][detail] = expiry
+      entry["ip_count"][detail] = 1
 
+def increment_count(pkt_type, ip_src, detail=None):
+    entry = host_discovery_tracker.get(ip_src)
+    if not entry:
+        return
 
+    if pkt_type == "icmp":
+        entry["icmp_count"][detail] += 1
+    elif pkt_type == "syn":
+        entry["syn_count"][detail] += 1
+    elif pkt_type == "ack":
+        entry["ack_count"][detail] += 1
+    elif pkt_type == "udp":
+        entry["udp_count"][detail] += 1
+    elif pkt_type == "ip":
+        entry["ip_count"][detail] += 1
 
 
 def previously_seen(pkt_type, ip_src, detail=None):
@@ -152,48 +177,62 @@ def previously_seen(pkt_type, ip_src, detail=None):
       return False
 
   if pkt_type == "icmp":
-      return detail in entry["icmp"]
+      return detail in entry["icmp"] or detail in entry["icmp_count"]
   elif pkt_type == "syn":
-      return detail in entry["syn_ports"]
+      return detail in entry["syn_ports"] or detail in entry["syn_count"]
   elif pkt_type == "ack":
-      return detail in entry["ack_ports"]
+      return detail in entry["ack_ports"] or detail in entry["ack_count"]
   elif pkt_type == "udp":
-      return detail in entry["udp_ports"]
+      return detail in entry["udp_ports"] or detail in entry["udp_count"]
   elif pkt_type == "ip":
-      return detail in entry["ip_proto"]
+      return detail in entry["ip_proto"] or detail in entry["ip_count"]
 
   return False
 
 def in_discard_window(pkt_type, ip_src, detail=None):
-    entry = host_discovery_tracker.get(ip_src)
+  entry = host_discovery_tracker.get(ip_src)
     if not entry:
         return False
 
-    now = time.time()
+    if host_discovery_config.get("timeout") is not None: # Timeout-based
+        now = time.time()
+        if pkt_type == "icmp":
+            expiry = entry["icmp"].get(detail)
+        elif pkt_type == "syn":
+            expiry = entry["syn_ports"].get(detail)
+        elif pkt_type == "ack":
+            expiry = entry["ack_ports"].get(detail)
+        elif pkt_type == "udp":
+            expiry = entry["udp_ports"].get(detail)
+        elif pkt_type == "ip":
+            expiry = entry["ip_proto"].get(detail)
+        else:
+            return False
+        return expiry is not None and now < expiry
 
-    if pkt_type == "icmp":
-        expiry = entry["icmp"].get(detail)
-    elif pkt_type == "syn":
-        expiry = entry["syn_ports"].get(detail)
-    elif pkt_type == "ack":
-        expiry = entry["ack_ports"].get(detail)
-    elif pkt_type == "udp":
-        expiry = entry["udp_ports"].get(detail)
-    elif pkt_type == "ip":
-      expiry = entry["ip_proto"].get(detail)
-    else:
-        return False
-
-    return expiry is not None and now < expiry
+    else:  # Count-based
+        count_threshold = host_discovery_config.get("count", 2)
+        if pkt_type == "icmp":
+            count = entry["icmp_count"].get(detail, 0)
+        elif pkt_type == "syn":
+            count = entry["syn_count"].get(detail, 0)
+        elif pkt_type == "ack":
+            count = entry["ack_count"].get(detail, 0)
+        elif pkt_type == "udp":
+            count = entry["udp_count"].get(detail, 0)
+        elif pkt_type == "ip":
+            count = entry["ip_count"].get(detail, 0)
+        else:
+            return False
+        return count <= count_threshold
 
 def parse_z_argument(z_value):
-  
   if z_value.strip().lower() == 'default':
     return {
         "icmp_types": [8, 13],     
         "syn_ports": [80,443],         
         "ack_ports": [80],
-        "timeout": 2.5            
+        "count" : 2            
     }
 
   config = {
@@ -202,7 +241,8 @@ def parse_z_argument(z_value):
       "ack_ports": [],
       "udp_ports": [],
       "ip_protos": [],
-      "timeout": 2.5
+      "count": 2 
+      "timeout": None
   }
 
   entries = z_value.split(':')
@@ -226,12 +266,6 @@ def parse_z_argument(z_value):
         config["ack_ports"].extend([int(p) for p in ports if p])
       except ValueError:
         print("Error in PA value")
-    elif entry.startswith('T'):
-      try:
-        config["timeout"] = float(entry[1:])
-        print(config["timeout"], entry[1:])
-      except ValueError:
-        print("Error in T value")
     elif entry.startswith('PU'):
       try:
         ports = entry[2:].split(',')
@@ -244,6 +278,19 @@ def parse_z_argument(z_value):
         config.setdefault("ip_protos", []).extend([int(p) for p in protos if p])
       except ValueError:
         print("Error in PO value")
+    elif entry.startswith('T'):
+      try:
+        config["timeout"] = float(entry[1:])
+        print(config["timeout"], entry[1:])
+      except ValueError:
+        print("Error in T value")
+    elif entry.startswith('C'):
+      try:
+          config["count"] = int(entry[1:])
+      except ValueError:
+          print("Error in C value")
+    else:
+      print(f"Unknown parameter: {entry}")
 
   print (f"Prueba: {config}")
   return config
@@ -258,7 +305,7 @@ def is_host_discovery_packet(pkt, config=None):
         "syn_ports": [443],
         "ack_ports": [80],
         "udp_ports": [],
-        "timeout": 1.5
+        "count": 2
     }
     config = config or default_config
 
@@ -268,6 +315,7 @@ def is_host_discovery_packet(pkt, config=None):
         # escaneo ICMP (PE, PP, PM)
         if ICMP in pkt and pkt[ICMP].type in config["icmp_types"]:
             if previously_seen("icmp", ip_src, pkt[ICMP].type):
+                increment_count("icmp", ip_src, pkt[ICMP].type)
                 return in_discard_window("icmp", ip_src, pkt[ICMP].type)
             else:
                 mark_as_seen("icmp", ip_src, pkt[ICMP].type)
