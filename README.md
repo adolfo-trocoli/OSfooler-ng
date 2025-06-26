@@ -9,6 +9,8 @@
 ![Version: 2.0](https://img.shields.io/badge/version-2.0-blue.svg)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-blue.svg)](https://GitHub.com/segofensiva/OSfooler-ng/graphs/commit-activity)
 
+*This version of osfooler-ng is aimed to provide a fully functioning python3 script with OS fingerprinting evasion and host detection evasion against nmap.*
+
 An outsider can discover general information, such as which operating system a host is running, by checking default stack parameters, ambiguities in IETF RFCs, or non-compliant TCP/IP implementations in responses to malformed requests. By identifying the exact OS of a host, an attacker can launch a targeted and precise attack.
 
 There are lot of reasons to hide your OS to the entire world:
