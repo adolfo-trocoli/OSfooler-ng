@@ -231,7 +231,7 @@ def parse_z_argument(z_value):
   if z_value.strip().lower() == 'default':
     return {
         "icmp_types": [8, 13],     
-        "syn_ports": [80,443],         
+        "syn_ports": [443],         
         "ack_ports": [80],
         "count" : 2,            
     }
@@ -301,15 +301,6 @@ def is_host_discovery_packet(pkt, config=None):
     Detecta si un paquete es parte de un escaneo de descubrimiento de hosts de Nmap.
     Devuelve True si debe descartarse.
     """
-    default_config = {
-        "icmp_types": [8, 13],
-        "syn_ports": [443],
-        "ack_ports": [80],
-        "udp_ports": [],
-        "count": 2,
-    }
-    config = config or default_config
-
     if IP in pkt:
         ip_src = pkt[IP].src
 
